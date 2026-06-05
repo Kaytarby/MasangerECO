@@ -1,0 +1,6 @@
+{
+  "name": "Эко-культура",
+  "description": "Мессенджер для садоводов с возможностью обмена фото и создания групп.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
