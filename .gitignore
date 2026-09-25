@@ -6,3 +6,10 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local database and user uploads
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+uploads/

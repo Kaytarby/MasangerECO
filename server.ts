@@ -8,21 +8,23 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Constants
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'eco_culture_super_secret_key';
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10 MB
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR);
 }
 
+// Helpers
+const now = () => new Date().toISOString();
+const normalizePhone = (phone: string) => (phone || '').replace(/\D/g, '');
+
 // Database Setup
-const db = new Database('eco_culture.db');
+const db = new Database(process.env.DB_PATH || 'eco_culture.db');
+db.pragma('journal_mode = WAL');
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,20 +32,22 @@ db.exec(`
     password TEXT NOT NULL,
     name TEXT NOT NULL,
     bio TEXT,
-    avatar TEXT
+    avatar TEXT,
+    created_at TEXT
   );
-  
+
   CREATE TABLE IF NOT EXISTS chats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     type TEXT NOT NULL, -- 'direct' or 'group'
     name TEXT,
     avatar TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS chat_participants (
     chat_id INTEGER,
     user_id INTEGER,
+    last_read_at TEXT,
     UNIQUE(chat_id, user_id)
   );
 
@@ -53,9 +57,18 @@ db.exec(`
     sender_id INTEGER NOT NULL,
     text TEXT,
     image_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT
   );
+
+  CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages (chat_id, id);
+  CREATE INDEX IF NOT EXISTS idx_participants_user ON chat_participants (user_id);
 `);
+
+// Migration for databases created before last_read_at existed
+const cpColumns = db.prepare('PRAGMA table_info(chat_participants)').all() as any[];
+if (!cpColumns.some((c) => c.name === 'last_read_at')) {
+  db.exec('ALTER TABLE chat_participants ADD COLUMN last_read_at TEXT');
+}
 
 async function startServer() {
   const app = express();
@@ -67,12 +80,22 @@ async function startServer() {
   app.use(express.json());
   app.use('/uploads', express.static(UPLOADS_DIR));
 
-  // Multer setup for uploads
+  // Multer setup for uploads (images only, max 10 MB)
   const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOADS_DIR),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + path.extname(file.originalname))
   });
-  const upload = multer({ storage });
+  const upload = multer({
+    storage,
+    limits: { fileSize: MAX_UPLOAD_SIZE },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Можно загружать только изображения'));
+      }
+    }
+  });
 
   // Middleware for auth
   const authenticateToken = (req: any, res: any, next: any) => {
@@ -86,62 +109,75 @@ async function startServer() {
     });
   };
 
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true, time: now() });
+  });
+
   // Auth Routes
   app.post('/api/auth/register', (req, res) => {
     const { phone, password, name } = req.body;
-    if (!phone || !password || !name) return res.status(400).json({ error: 'Missing fields' });
+    const normalized = normalizePhone(String(phone || ''));
+    const trimmedName = String(name || '').trim();
+    if (!normalized || !password || !trimmedName) return res.status(400).json({ error: 'Заполните все поля' });
+    if (normalized.length < 5) return res.status(400).json({ error: 'Некорректный номер телефона' });
     try {
       const hash = bcrypt.hashSync(password, 10);
-      const stmt = db.prepare('INSERT INTO users (phone, password, name) VALUES (?, ?, ?)');
-      const info = stmt.run(phone, hash, name);
-      const token = jwt.sign({ id: info.lastInsertRowid, phone, name }, JWT_SECRET);
-      res.json({ token, user: { id: info.lastInsertRowid, phone, name } });
+      const stmt = db.prepare('INSERT INTO users (phone, password, name, created_at) VALUES (?, ?, ?, ?)');
+      const info = stmt.run(normalized, hash, trimmedName, now());
+      const token = jwt.sign({ id: Number(info.lastInsertRowid), phone: normalized, name: trimmedName }, JWT_SECRET);
+      res.json({ token, user: { id: Number(info.lastInsertRowid), phone: normalized, name: trimmedName } });
     } catch (e: any) {
-      if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-        res.status(400).json({ error: 'Phone already registered' });
+      if (String(e.code || '').includes('SQLITE_CONSTRAINT_UNIQUE')) {
+        res.status(400).json({ error: 'Этот номер уже зарегистрирован' });
       } else {
-        res.status(500).json({ error: 'Database error' });
+        console.error(e);
+        res.status(500).json({ error: 'Ошибка базы данных' });
       }
     }
   });
 
   app.post('/api/auth/login', (req, res) => {
     const { phone, password } = req.body;
+    const normalized = normalizePhone(String(phone || ''));
     try {
-      const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(phone) as any;
-      if (!user) return res.status(400).json({ error: 'User not found' });
-      if (!bcrypt.compareSync(password, user.password)) return res.status(400).json({ error: 'Invalid password' });
+      const user = db.prepare('SELECT * FROM users WHERE phone = ?').get(normalized) as any;
+      if (!user) return res.status(400).json({ error: 'Пользователь не найден' });
+      if (!bcrypt.compareSync(String(password || ''), user.password)) return res.status(400).json({ error: 'Неверный пароль' });
       const token = jwt.sign({ id: user.id, phone: user.phone, name: user.name }, JWT_SECRET);
-      
-      const { password: _, ...userInfo } = user;
+
+      const { password: _pw, ...userInfo } = user;
       res.json({ token, user: userInfo });
     } catch (e) {
-      res.status(500).json({ error: 'Database error' });
+      console.error(e);
+      res.status(500).json({ error: 'Ошибка базы данных' });
     }
   });
 
   app.get('/api/auth/me', authenticateToken, (req: any, res) => {
     try {
       const user = db.prepare('SELECT id, phone, name, bio, avatar FROM users WHERE id = ?').get(req.user.id);
+      if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
       res.json({ user });
     } catch {
-      res.status(500).json({ error: 'Error' });
+      res.status(500).json({ error: 'Ошибка' });
     }
   });
 
   // User details & Profile update
   app.get('/api/users', authenticateToken, (req: any, res) => {
     try {
-      const users = db.prepare('SELECT id, name, phone, avatar, bio FROM users WHERE id != ?').all(req.user.id);
+      const users = db.prepare('SELECT id, name, phone, avatar, bio FROM users WHERE id != ? ORDER BY name COLLATE NOCASE ASC').all(req.user.id);
       res.json({ users });
     } catch {
-      res.status(500).json({ error: 'Error fetching users' });
+      res.status(500).json({ error: 'Ошибка загрузки пользователей' });
     }
   });
 
   app.put('/api/users/profile', authenticateToken, upload.single('avatar'), (req: any, res) => {
-    const { name, bio } = req.body;
-    let avatarUrl = undefined;
+    const name = String(req.body?.name || '').trim();
+    const bio = String(req.body?.bio || '');
+    if (!name) return res.status(400).json({ error: 'Имя не может быть пустым' });
+    let avatarUrl: string | null = null;
     if (req.file) avatarUrl = '/uploads/' + req.file.filename;
 
     try {
@@ -153,35 +189,47 @@ async function startServer() {
       }
       query += ' WHERE id = ?';
       params.push(req.user.id);
-      
+
       db.prepare(query).run(...params);
-      const user = db.prepare('SELECT id, name, phone, avatar, bio FROM users WHERE id = ?').get(req.user.id);
+      const user = db.prepare('SELECT id, phone, name, avatar, bio FROM users WHERE id = ?').get(req.user.id);
       res.json({ user });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: 'Profile update failed' });
+      res.status(500).json({ error: 'Не удалось обновить профиль' });
     }
   });
 
-  // Chats setup
+  // Chats
   app.get('/api/chats', authenticateToken, (req: any, res) => {
     try {
-      // Get all chats for the user
       const chats = db.prepare(`
-        SELECT c.*, 
-          (SELECT text FROM messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
-          (SELECT created_at FROM messages WHERE chat_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_time
+        SELECT c.id, c.type, c.name AS chat_name, c.avatar AS chat_avatar, c.created_at,
+          lm.text AS last_message, lm.image_url AS last_message_image, lm.created_at AS last_message_time
         FROM chats c
         JOIN chat_participants cp ON cp.chat_id = c.id
+        LEFT JOIN messages lm ON lm.id = (SELECT MAX(id) FROM messages WHERE chat_id = c.id)
         WHERE cp.user_id = ?
-        ORDER BY last_message_time DESC
+        ORDER BY COALESCE(lm.id, 0) DESC, c.id DESC
       `).all(req.user.id) as any[];
+
+      // Unread counts per chat
+      const unreadRows = db.prepare(`
+        SELECT cp.chat_id,
+          (SELECT COUNT(*) FROM messages m
+             WHERE m.chat_id = cp.chat_id
+               AND m.sender_id != ?
+               AND (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)) AS unread
+        FROM chat_participants cp
+        WHERE cp.user_id = ?
+      `).all(req.user.id, req.user.id) as any[];
+      const unreadMap: Record<number, number> = {};
+      for (const row of unreadRows) unreadMap[row.chat_id] = row.unread;
 
       // Resolve profiles for direct chats
       for (const chat of chats) {
         if (chat.type === 'direct') {
           const otherParticipant = db.prepare(`
-            SELECT u.id, u.name, u.avatar 
+            SELECT u.id, u.name, u.avatar
             FROM users u
             JOIN chat_participants cp ON cp.user_id = u.id
             WHERE cp.chat_id = ? AND cp.user_id != ?
@@ -192,11 +240,12 @@ async function startServer() {
             chat.other_user_id = otherParticipant.id;
           }
         }
+        chat.unread = unreadMap[chat.id] || 0;
       }
-      
+
       res.json({ chats });
     } catch {
-      res.status(500).json({ error: 'Error fetching chats' });
+      res.status(500).json({ error: 'Ошибка загрузки чатов' });
     }
   });
 
@@ -204,7 +253,11 @@ async function startServer() {
     const { type, participantIds, name } = req.body;
     try {
       if (type === 'direct') {
-        const otherId = participantIds[0];
+        const otherId = Number(participantIds?.[0]);
+        if (!otherId) return res.status(400).json({ error: 'Укажите собеседника' });
+        const other = db.prepare('SELECT id FROM users WHERE id = ?').get(otherId);
+        if (!other) return res.status(404).json({ error: 'Пользователь не найден' });
+
         // Check if direct chat already exists
         const existing = db.prepare(`
           SELECT c.id FROM chats c
@@ -212,26 +265,41 @@ async function startServer() {
           JOIN chat_participants cp2 ON cp2.chat_id = c.id AND cp2.user_id = ?
           WHERE c.type = 'direct'
         `).get(req.user.id, otherId) as any;
-        
+
         if (existing) {
           return res.json({ chatId: existing.id });
         }
+
+        const info = db.prepare('INSERT INTO chats (type, created_at) VALUES (?, ?)').run('direct', now());
+        const chatId = Number(info.lastInsertRowid);
+        const stmt = db.prepare('INSERT INTO chat_participants (chat_id, user_id, last_read_at) VALUES (?, ?, ?)');
+        stmt.run(chatId, req.user.id, now());
+        stmt.run(chatId, otherId, null);
+        return res.json({ chatId });
       }
 
-      const info = db.prepare('INSERT INTO chats (type, name) VALUES (?, ?)').run(type, name || null);
-      const chatId = info.lastInsertRowid;
-      
-      // Add participants
-      const stmt = db.prepare('INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)');
-      stmt.run(chatId, req.user.id);
-      for (const pid of participantIds) {
-        if (pid !== req.user.id) stmt.run(chatId, pid);
+      if (type === 'group') {
+        const groupName = String(name || '').trim();
+        if (!groupName) return res.status(400).json({ error: 'Укажите название группы' });
+        const info = db.prepare('INSERT INTO chats (type, name, created_at) VALUES (?, ?, ?)').run('group', groupName, now());
+        const chatId = Number(info.lastInsertRowid);
+        const stmt = db.prepare('INSERT INTO chat_participants (chat_id, user_id, last_read_at) VALUES (?, ?, ?)');
+        stmt.run(chatId, req.user.id, now());
+        const seen = new Set<number>([req.user.id]);
+        for (const pid of (participantIds || [])) {
+          const id = Number(pid);
+          if (!seen.has(id)) {
+            seen.add(id);
+            stmt.run(chatId, id, null);
+          }
+        }
+        return res.json({ chatId });
       }
-      
-      res.json({ chatId });
-    } catch(e) {
+
+      return res.status(400).json({ error: 'Неизвестный тип чата' });
+    } catch (e) {
       console.error(e);
-      res.status(500).json({ error: 'Failed to create chat' });
+      res.status(500).json({ error: 'Не удалось создать чат' });
     }
   });
 
@@ -239,48 +307,75 @@ async function startServer() {
     try {
       // Validate participant
       const p = db.prepare('SELECT * FROM chat_participants WHERE chat_id = ? AND user_id = ?').get(req.params.id, req.user.id);
-      if (!p) return res.status(403).json({ error: 'Not in chat' });
+      if (!p) return res.status(403).json({ error: 'Вы не в этом чате' });
 
       const messages = db.prepare(`
-        SELECT m.*, u.name as sender_name, u.avatar as sender_avatar 
+        SELECT m.*, u.name AS sender_name, u.avatar AS sender_avatar
         FROM messages m
         JOIN users u ON u.id = m.sender_id
-        WHERE m.chat_id = ? 
-        ORDER BY m.created_at ASC
+        WHERE m.chat_id = ?
+        ORDER BY m.id ASC
       `).all(req.params.id);
       res.json({ messages });
     } catch {
-      res.status(500).json({ error: 'Error fetching messages' });
+      res.status(500).json({ error: 'Ошибка загрузки сообщений' });
     }
   });
 
   app.post('/api/chats/:id/messages', authenticateToken, upload.single('image'), (req: any, res) => {
-    const { text } = req.body;
+    const text = String(req.body?.text || '').trim();
     const chatId = req.params.id;
-    let imageUrl = undefined;
+    if (!text && !req.file) return res.status(400).json({ error: 'Пустое сообщение' });
+    let imageUrl: string | null = null;
     if (req.file) imageUrl = '/uploads/' + req.file.filename;
 
     try {
       const p = db.prepare('SELECT * FROM chat_participants WHERE chat_id = ? AND user_id = ?').get(chatId, req.user.id);
-      if (!p) return res.status(403).json({ error: 'Not in chat' });
+      if (!p) return res.status(403).json({ error: 'Вы не в этом чате' });
 
-      const info = db.prepare('INSERT INTO messages (chat_id, sender_id, text, image_url) VALUES (?, ?, ?, ?)').run(chatId, req.user.id, text || null, imageUrl || null);
-      
+      const info = db.prepare('INSERT INTO messages (chat_id, sender_id, text, image_url, created_at) VALUES (?, ?, ?, ?, ?)')
+        .run(chatId, req.user.id, text || null, imageUrl, now());
+
       const message = db.prepare(`
-        SELECT m.*, u.name as sender_name, u.avatar as sender_avatar 
+        SELECT m.*, u.name AS sender_name, u.avatar AS sender_avatar
         FROM messages m
         JOIN users u ON u.id = m.sender_id
         WHERE m.id = ?
-      `).get(info.lastInsertRowid);
+      `).get(Number(info.lastInsertRowid));
+
+      // The sender is also a participant — mark their copy as read
+      db.prepare('UPDATE chat_participants SET last_read_at = ? WHERE chat_id = ? AND user_id = ?').run(now(), chatId, req.user.id);
 
       // Broadcast to room
       io.to(`chat_${chatId}`).emit('new_message', message);
-      
+
       res.json({ message });
     } catch (e) {
       console.error(e);
-      res.status(500).json({ error: 'Error sending message' });
+      res.status(500).json({ error: 'Ошибка отправки сообщения' });
     }
+  });
+
+  // Mark chat as read
+  app.post('/api/chats/:id/read', authenticateToken, (req: any, res) => {
+    try {
+      const chatId = req.params.id;
+      const p = db.prepare('SELECT 1 FROM chat_participants WHERE chat_id = ? AND user_id = ?').get(chatId, req.user.id);
+      if (!p) return res.status(403).json({ error: 'Вы не в этом чате' });
+      db.prepare('UPDATE chat_participants SET last_read_at = ? WHERE chat_id = ? AND user_id = ?').run(now(), chatId, req.user.id);
+      res.json({ ok: true });
+    } catch {
+      res.status(500).json({ error: 'Ошибка' });
+    }
+  });
+
+  // Multer / JSON error handler (e.g. file too large) — must be after all routes
+  app.use((err: any, req: any, res: any, next: any) => {
+    if (err) {
+      const msg = err.message === 'File too large' ? 'Файл слишком большой (максимум 10 МБ)' : (err.message || 'Ошибка загрузки');
+      return res.status(400).json({ error: msg });
+    }
+    next();
   });
 
   // Socket.io for Realtime
@@ -316,15 +411,24 @@ async function startServer() {
     });
   });
 
-  // Vite middleware
-  if (process.env.NODE_ENV !== "production") {
+  // Vite middleware (dev) or static dist (production).
+  // If NODE_ENV is not set explicitly, use the production build when dist/ exists.
+  const distPath = path.join(process.cwd(), 'dist');
+  const isProduction = process.env.NODE_ENV
+    ? process.env.NODE_ENV === 'production'
+    : fs.existsSync(path.join(distPath, 'index.html'));
+
+  if (!isProduction) {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // Allow any host (app is served behind the Arena/Cloud preview proxy)
+        allowedHosts: true,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

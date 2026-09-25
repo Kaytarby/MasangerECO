@@ -1,25 +1,16 @@
 {
   "short_name": "Эко-культура",
-  "name": "Эко-культура - Садоводство",
+  "name": "Эко-культура — мессенджер",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "https://api.iconify.design/mdi/leaf.svg",
+      "src": "favicon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "sizes": "192x192"
-    },
-    {
-      "src": "https://api.iconify.design/mdi/leaf.svg",
-      "type": "image/svg+xml",
-      "sizes": "512x512"
+      "purpose": "any"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#16a34a",
+  "theme_color": "#00a884",
   "background_color": "#f0fdf4"
 }
