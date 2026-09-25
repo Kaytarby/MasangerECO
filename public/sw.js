@@ -1,14 +1,18 @@
-self.addEventListener('push', function(event) {
+self.addEventListener('push', function (event) {
   let data = {};
   if (event.data) {
-    data = event.data.json();
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { body: event.data.text() };
+    }
   }
-  
-  const title = data.title || "Новое сообщение";
+
+  const title = data.title || 'Новое сообщение';
   const options = {
-    body: data.body || "Вы получили новое сообщение в Эко-культура.",
-    icon: "https://api.iconify.design/mdi/leaf.svg",
-    badge: "https://api.iconify.design/mdi/leaf.svg"
+    body: data.body || 'Вы получили новое сообщение в Эко-культуре.',
+    icon: '/favicon.svg',
+    badge: '/favicon.svg'
   };
 
   event.waitUntil(
@@ -16,7 +20,7 @@ self.addEventListener('push', function(event) {
   );
 });
 
-self.addEventListener('notificationclick', function(event) {
+self.addEventListener('notificationclick', function (event) {
   event.notification.close();
   event.waitUntil(
     clients.openWindow('/')
