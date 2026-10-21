@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Эко-культура — презентация для турнира разработчиков | MasangerECO</title>
+<meta name="description" content="Очень большая презентация мессенджера «Эко-культура» (MasangerECO): все данные репозитория, архитектура, API, база данных, 25 тестов, турнир технологий и десятки интересных фактов. Стиль Apple.">
+<style>
+:root{
+  --black:#000; --near:#0b0b0d; --panel:#161617; --panel2:#1d1d1f;
+  --light:#f5f5f7; --light2:#fbfbfd; --text:#f5f5f7; --muted:#a1a1a6; --muted-d:#6e6e73;
+  --ink:#1d1d1f; --green:#00a884; --green-d:#008069; --apple-green:#30d158; --mint:#64d2ff;
+  --chat-bg:#efeae2; --own:#d9fdd3; --wa-head:#f0f2f5; --wa-text:#111b21; --wa-sub:#667781; --wa-icon:#54656f; --avatar:#81c784;
+  --radius:28px; --max:1180px;
+  --grad:linear-gradient(90deg,#30d158,#00a884 35%,#64d2ff 70%,#bf5af2);
+  --grad2:linear-gradient(135deg,#00a884,#30d158 55%,#ffd60a);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--black);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.45}
+::selection{background:#00a884;color:#fff}
+a{color:#2997ff;text-decoration:none} a:hover{text-decoration:underline}
+img{max-width:100%}
+button{font-family:inherit;cursor:pointer}
+
+/* ===== Progress + Nav (Apple glass) ===== */
+#progress{position:fixed;top:0;left:0;height:3px;background:var(--grad);width:0;z-index:200}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(22,22,23,.72);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-in{max-width:var(--max);margin:0 auto;display:flex;align-items:center;gap:26px;padding:0 22px;height:52px;font-size:12px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:#fff;white-space:nowrap}
+.logo .leaf{width:26px;height:26px;border-radius:8px;background:var(--grad2);display:grid;place-items:center;font-size:15px}
+.nav-links{display:flex;gap:22px;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{color:#e8e8ed;opacity:.85}.nav-links a:hover{opacity:1;text-decoration:none}
+.nav-cta{margin-left:auto;background:#0071e3;color:#fff!important;padding:6px 14px;border-radius:980px;opacity:1!important;flex-shrink:0}
+.nav-cta:hover{background:#0077ed}
+/* side dots */
+.dots{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:90;display:flex;flex-direction:column;gap:9px}
+.dots a{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.28);display:block;transition:.3s}
+.dots a.active{background:var(--apple-green);transform:scale(1.5)}
+@media(max-width:900px){.dots{display:none}}
+
+/* ===== Layout primitives ===== */
+section{padding:120px 22px;position:relative}
+.wrap{max-width:var(--max);margin:0 auto}
+.narrow{max-width:880px;margin:0 auto}
+.light{background:var(--light);color:var(--ink)}
+.white{background:var(--light2);color:var(--ink)}
+.dark{background:var(--black)} .dark2{background:var(--near)}
+.eyebrow{font-size:14px;font-weight:700;letter-spacing:.04em;color:var(--green);text-transform:none;margin-bottom:14px}
+.eyebrow.orange{color:#f56300}.eyebrow.blue{color:#2997ff}.eyebrow.purple{color:#bf5af2}
+h1{font-size:clamp(52px,9vw,112px);line-height:.98;letter-spacing:-.03em;font-weight:800}
+h2{font-size:clamp(38px,5.6vw,72px);line-height:1.02;letter-spacing:-.028em;font-weight:800;margin-bottom:20px}
+h3{font-size:clamp(24px,3vw,36px);letter-spacing:-.02em;font-weight:750;line-height:1.12}
+h4{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.lead{font-size:clamp(19px,2.4vw,28px);line-height:1.35;color:var(--muted);font-weight:500;letter-spacing:-.01em}
+.light .lead,.white .lead{color:var(--muted-d)}
+.small{font-size:14px;color:var(--muted)} .light .small{color:var(--muted-d)}
+.tiny{font-size:12px;color:var(--muted)} .light .tiny{color:var(--muted-d)}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.grad2{background:var(--grad2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.center{text-align:center}
+.mt{margin-top:26px}.mt-lg{margin-top:52px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:980px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.grid2,.grid3,.grid4{grid-template-columns:1fr} section{padding:84px 18px}}
+.reveal{opacity:0;transform:translateY(36px) scale(.985);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.pill{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);padding:7px 14px;border-radius:980px;font-size:13px;font-weight:600}
+.light .pill{background:#fff;border-color:#e3e3e6;color:var(--ink)}
+.btn{display:inline-block;background:#0071e3;color:#fff;padding:13px 26px;border-radius:980px;font-size:16px;font-weight:600;border:none;transition:.25s}
+.btn:hover{background:#0077ed;text-decoration:none;transform:scale(1.03)}
+.btn.green{background:var(--green)} .btn.green:hover{background:var(--green-d)}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff}
+.btn.ghost:hover{background:rgba(255,255,255,.1)}
+.card{background:var(--panel);border-radius:var(--radius);padding:38px 34px;overflow:hidden;position:relative}
+.light .card,.white .card{background:#fff;box-shadow:0 6px 30px rgba(0,0,0,.06)}
+.card .icon{font-size:42px;margin-bottom:16px;display:block}
+.card p{color:var(--muted);margin-top:10px;font-size:16px}
+.light .card p{color:var(--muted-d)}
+code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.92em;background:rgba(120,120,128,.16);padding:2px 7px;border-radius:6px}
+pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13.5px;line-height:1.6;overflow-x:auto}
+.kbd{font-family:ui-monospace,monospace;background:#333336;color:#fff;padding:2px 8px;border-radius:6px;border-bottom:2px solid #555;font-size:12px}
+hr.sep{border:none;border-top:1px solid rgba(255,255,255,.1);max-width:var(--max);margin:0 auto}
+.light hr.sep{border-color:#d2d2d7}
+
+/* ===== Hero ===== */
+.hero{min-height:100svh;display:flex;flex-direction:column;justify-content:center;padding-top:130px;overflow:hidden;background:radial-gradient(1100px 550px at 50% -5%,rgba(0,168,132,.34),transparent 62%),radial-gradient(800px 420px at 85% 30%,rgba(100,210,255,.16),transparent 60%),#000}
+.hero .badge-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+.hero p.sub{font-size:clamp(20px,2.6vw,30px);color:var(--muted);font-weight:550;max-width:860px;margin:26px auto 0}
+.hero-links{margin-top:28px;font-size:19px;display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.scroll-hint{margin-top:56px;color:var(--muted);font-size:13px;letter-spacing:.14em;text-transform:uppercase;text-align:center;animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+/* phone */
+.phones{display:flex;gap:26px;justify-content:center;align-items:flex-end;margin-top:64px;flex-wrap:wrap;perspective:1200px}
+.phone{width:292px;border-radius:46px;background:#111;padding:11px;box-shadow:0 40px 90px rgba(0,0,0,.65),inset 0 0 0 2px #2c2c2e;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.phone:hover{transform:translateY(-12px) rotateY(-4deg)}
+.phone .scr{border-radius:36px;overflow:hidden;background:var(--chat-bg);height:560px;display:flex;flex-direction:column;color:var(--wa-text);font-size:13px}
+.phone .scr.list{background:#fff}
+.ph-head{background:var(--wa-head);padding:12px 14px;display:flex;align-items:center;gap:10px;font-weight:600}
+.ph-head .av{width:34px;height:34px;border-radius:50%;background:var(--avatar);color:#fff;display:grid;place-items:center;font-weight:800}
+.ph-head small{display:block;color:var(--wa-sub);font-weight:400;font-size:11px}
+.msg{max-width:78%;padding:8px 10px;border-radius:10px;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.12);margin:4px 12px;align-self:flex-start}
+.msg.me{background:var(--own);align-self:flex-end}
+.msg .t{display:block;text-align:right;font-size:10px;color:var(--wa-sub);margin-top:3px}
+.msg .who{font-size:11px;font-weight:800;color:#e67e22}
+.ph-body{flex:1;display:flex;flex-direction:column;padding:10px 0;overflow:hidden}
+.ph-input{background:var(--wa-head);padding:10px;display:flex;gap:8px;align-items:center}
+.ph-input .box{flex:1;background:#fff;border-radius:10px;padding:9px 12px;color:#8696a0}
+.ph-input .send{width:38px;height:38px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:16px}
+.chat-row{display:flex;gap:11px;padding:11px 14px;align-items:center;border-bottom:1px solid #f0f2f5}
+.chat-row .av{width:46px;height:46px;border-radius:50%;background:var(--avatar);color:#fff;display:grid;place-items:center;font-weight:800;font-size:18px;flex-shrink:0}
+.chat-row b{font-size:14px}.chat-row p{color:var(--wa-sub);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.unread{margin-left:auto;background:var(--green);color:#fff;font-size:11px;font-weight:800;min-width:21px;height:21px;border-radius:980px;display:grid;place-items:center}
+.typing{display:inline-flex;gap:4px;padding:12px 14px}
+.typing i{width:7px;height:7px;border-radius:50%;background:#8696a0;animation:ty 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes ty{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+
+/* marquee */
+.marquee{background:#0b0b0d;border-block:1px solid rgba(255,255,255,.08);padding:18px 0;overflow:hidden;white-space:nowrap}
+.marquee .track{display:inline-block;animation:mq 30s linear infinite;font-size:15px;font-weight:650;color:#e8e8ed}
+.marquee span{margin:0 26px}.marquee b{color:var(--apple-green)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* big stats */
+.bignum{font-size:clamp(56px,7vw,96px);font-weight:800;letter-spacing:-.035em;line-height:1}
+.stat-label{font-size:16px;color:var(--muted);margin-top:8px;font-weight:550}
+.light .stat-label{color:var(--muted-d)}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:34px 20px;text-align:left}
+@media(max-width:980px){.stat-grid{grid-template-columns:1fr 1fr}}
+.stat{border-top:2px solid rgba(255,255,255,.14);padding-top:18px}
+.light .stat{border-color:#d2d2d7}
+
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.bento .card{min-height:230px;display:flex;flex-direction:column}
+.bento .w3{grid-column:span 3}.bento .w2{grid-column:span 2}.bento .w4{grid-column:span 4}.bento .w6{grid-column:span 6}
+@media(max-width:900px){.bento .w2,.bento .w3,.bento .w4{grid-column:span 6}}
+.bento .foot{margin-top:auto;padding-top:18px}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{font-size:12px;font-weight:650;background:rgba(255,255,255,.09);padding:5px 11px;border-radius:980px}
+.light .chip{background:#eef6f3;color:#00654f}
+
+/* tables */
+.tblwrap{overflow-x:auto;border-radius:22px;border:1px solid rgba(255,255,255,.1)}
+.light .tblwrap{border-color:#d2d2d7;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:720px}
+th{text-align:left;padding:16px 18px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.04)}
+.light th{background:#f5f5f7;color:var(--muted-d)}
+td{padding:15px 18px;border-top:1px solid rgba(255,255,255,.07);vertical-align:top}
+.light td{border-color:#e8e8ec}
+tr:hover td{background:rgba(0,168,132,.05)}
+.m{font-weight:800;font-size:11px;padding:4px 9px;border-radius:6px;letter-spacing:.05em}
+.m.get{background:#0a84ff;color:#fff}.m.post{background:#30d158;color:#04150a}.m.put{background:#ff9f0a;color:#1c1000}
+.pass{background:rgba(48,209,88,.16);color:#30d158;font-weight:800;font-size:12px;padding:4px 10px;border-radius:980px;white-space:nowrap}
+.light .pass{background:#e6f9ec;color:#0a7d33}
+
+/* diagram boxes */
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;justify-content:center}
+.fbox{background:var(--panel2);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px 20px;width:230px;text-align:center}
+.light .fbox{background:#fff;border-color:#e3e3e6}
+.fbox .icon{font-size:30px}
+.fbox b{display:block;margin:8px 0 4px}
+.fbox p{font-size:13px;color:var(--muted)} .light .fbox p{color:var(--muted-d)}
+.arrow{display:grid;place-items:center;font-size:26px;color:var(--green);padding:0 8px;min-width:38px}
+@media(max-width:900px){.arrow{transform:rotate(90deg);width:100%}}
+
+/* terminal */
+.term{background:#0c0c0e;border:1px solid rgba(255,255,255,.12);border-radius:20px;overflow:hidden;text-align:left}
+.term-bar{background:#1d1d1f;padding:11px 16px;display:flex;gap:8px;align-items:center}
+.term-bar i{width:12px;height:12px;border-radius:50%;display:block}
+.term-bar span{margin-left:8px;font-size:12px;color:var(--muted)}
+.term pre{padding:22px;color:#e8e8ed}
+.term .c{color:#8e8e93}.term .g{color:#30d158}.term .b{color:#64d2ff}.term .y{color:#ffd60a}
+.copybtn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:8px;padding:5px 12px;font-size:12px;margin-left:auto}
+.copybtn:hover{background:rgba(255,255,255,.2)}
+
+/* tabs / filters / accordion */
+.seg{display:inline-flex;background:rgba(120,120,128,.18);border-radius:980px;padding:3px;gap:2px;flex-wrap:wrap;justify-content:center}
+.seg button{border:none;background:transparent;color:inherit;padding:9px 20px;border-radius:980px;font-size:14px;font-weight:650}
+.seg button.on{background:#fff;color:#000;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.light .seg button.on{background:#1d1d1f;color:#fff}
+details{background:var(--panel);border-radius:20px;padding:0;margin-bottom:12px;overflow:hidden}
+.light details{background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.05)}
+summary{padding:22px 26px;font-size:18px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--green);font-size:24px;font-weight:400}
+details[open] summary::after{content:"–"}
+details .a{padding:0 26px 24px;color:var(--muted);font-size:16px}
+.light details .a{color:var(--muted-d)}
+
+/* bracket */
+.bracket{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:14px;align-items:center}
+@media(max-width:1000px){.bracket{grid-template-columns:1fr}.bracket .vs{text-align:center}}
+.round{display:flex;flex-direction:column;gap:14px}
+.match{background:var(--panel);border-radius:18px;padding:16px 18px}
+.match .vs-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 0;font-size:15px}
+.match .win{color:#30d158;font-weight:800}
+.match .lose{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.3)}
+.vs{font-weight:900;font-size:26px;color:var(--muted)}
+.trophy{font-size:74px;line-height:1}
+
+/* fact cards */
+.fact{background:var(--panel);border-radius:24px;padding:30px 28px}
+.light .fact{background:#fff;box-shadow:0 6px 26px rgba(0,0,0,.05)}
+.fact .num{font-size:13px;font-weight:800;color:var(--green);letter-spacing:.08em}
+.fact h4{margin:10px 0 8px}
+.fact p{font-size:15px;color:var(--muted)} .light .fact p{color:var(--muted-d)}
+.src-tag{font-size:11px;font-weight:750;padding:3px 9px;border-radius:980px;background:rgba(48,209,88,.15);color:#30d158}
+.src-tag.gen{background:rgba(100,210,255,.15);color:#64d2ff}
+.light .src-tag{background:#e6f9ec;color:#0a7d33}.light .src-tag.gen{background:#e3f2fd;color:#0b5cad}
+
+/* file tree */
+.tree{background:#0c0c0e;border-radius:20px;padding:26px 26px 26px 30px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13.5px;line-height:1.85;color:#d8d8de;overflow-x:auto;white-space:pre;text-align:left}
+.tree .d{color:#64d2ff}.tree .f{color:#e8e8ed}.tree .n{color:#ffd60a}.tree .c{color:#8e8e93}
+canvas.chart{width:100%;height:auto;display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:14px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:6px}
+.callout{border-left:4px solid var(--green);background:rgba(0,168,132,.08);border-radius:0 18px 18px 0;padding:22px 26px;font-size:17px}
+.light .callout{background:#eef8f4}
+.quote{font-size:clamp(26px,3.6vw,44px);font-weight:750;letter-spacing:-.02em;line-height:1.18}
+footer{background:var(--near);padding:60px 22px 40px;font-size:12.5px;color:var(--muted)}
+footer .wrap{display:block}
+.foot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin:30px 0}
+@media(max-width:800px){.foot-grid{grid-template-columns:1fr 1fr}}
+.foot-grid b{color:#e8e8ed;display:block;margin-bottom:10px;font-size:13px}
+.foot-grid a{display:block;color:var(--muted);margin:6px 0;font-size:13px}
+.timeline{position:relative;max-width:820px;margin:0 auto;text-align:left}
+.timeline::before{content:"";position:absolute;left:19px;top:8px;bottom:8px;width:2px;background:linear-gradient(#30d158,#64d2ff,#bf5af2)}
+.tl{position:relative;padding:0 0 38px 58px}
+.tl::before{content:"";position:absolute;left:11px;top:5px;width:18px;height:18px;border-radius:50%;background:#000;border:4px solid var(--green)}
+.light .tl::before{background:#f5f5f7}
+.tl .when{font-size:13px;font-weight:800;color:var(--green);letter-spacing:.06em;text-transform:uppercase}
+.tl p{color:var(--muted);margin-top:6px}.light .tl p{color:var(--muted-d)}
+.checklist{list-style:none;text-align:left}
+.checklist li{padding:11px 0 11px 36px;position:relative;border-bottom:1px solid rgba(255,255,255,.07);font-size:15.5px}
+.light .checklist li{border-color:#e8e8ec}
+.checklist li::before{content:"✓";position:absolute;left:0;top:9px;width:24px;height:24px;border-radius:50%;background:rgba(48,209,88,.16);color:#30d158;display:grid;place-items:center;font-weight:900;font-size:13px}
+@media print{nav,.dots,#progress,.scroll-hint{display:none!important} section{padding:40px 10px;break-inside:avoid} body{background:#fff;color:#000} .reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<nav>
+  <div class="nav-in">
+    <a class="logo" href="#top" style="color:#fff"><span class="leaf">🌿</span> Эко-культура</a>
+    <div class="nav-links">
+      <a href="#numbers">Цифры</a><a href="#product">Продукт</a><a href="#features">Возможности</a>
+      <a href="#realtime">Realtime</a><a href="#arch">Архитектура</a><a href="#stack">Стек</a>
+      <a href="#db">База данных</a><a href="#api">API</a><a href="#security">Безопасность</a>
+      <a href="#code">Код</a><a href="#tests">Тесты</a><a href="#tournament">Турнир</a>
+      <a href="#facts">Факты</a><a href="#roadmap">Roadmap</a><a href="#faq">FAQ</a>
+    </div>
+    <a class="nav-cta" href="#run">Запустить</a>
+  </div>
+</nav>
+
+<div class="dots" id="dots">
+  <a href="#top" title="Начало"></a><a href="#numbers" title="Цифры"></a><a href="#product" title="Продукт"></a>
+  <a href="#features" title="Возможности"></a><a href="#arch" title="Архитектура"></a><a href="#api" title="API"></a>
+  <a href="#tests" title="Тесты"></a><a href="#tournament" title="Турнир технологий"></a><a href="#facts" title="Факты"></a><a href="#final" title="Финал"></a>
+</div>
+
+<!-- ============ 1. HERO ============ -->
+<section class="hero center" id="top">
+  <div class="wrap">
+    <div class="badge-row reveal">
+      <span class="pill">🏆 Презентация для турнира разработчиков</span>
+      <span class="pill">📦 Репозиторий: Kaytarby / MasangerECO</span>
+      <span class="pill">🧾 Все цифры — из реального кода</span>
+    </div>
+    <p class="eyebrow reveal">Мессенджер «Эко-культура» — MasangerECO</p>
+    <h1 class="reveal">Общение,<br><span class="grad2">которое растёт.</span></h1>
+    <p class="sub reveal">Полноценный мессенджер для сообщества садоводов: личные и групповые чаты в реальном времени, фотографии урожая, профили и непрочитанные сообщения. Собран как настоящий продукт — от базы данных до PWA-уведомлений.</p>
+    <div class="hero-links reveal">
+      <a href="#product">Смотреть продукт &gt;</a>
+      <a href="#numbers">Все цифры проекта &gt;</a>
+      <a href="#tournament">Турнир технологий &gt;</a>
+    </div>
+
+    <div class="phones reveal">
+      <!-- Phone 1: chat list (replica of Home.tsx sidebar) -->
+      <div class="phone"><div class="scr list">
+        <div class="ph-head"><div class="av">А</div><div>Анна Садовод<small>+7 900 ••• •• ••</small></div><span style="margin-left:auto">👥 ↩</span></div>
+        <div style="padding:10px 12px"><div style="background:#f0f2f5;border-radius:9px;padding:8px 12px;color:#8696a0">🔍 Поиск чатов и людей</div></div>
+        <div class="chat-row"><div class="av">К</div><div><b>Клуб садоводов</b><p>Добро пожаловать!</p></div><span class="unread">3</span></div>
+        <div class="chat-row"><div class="av" style="background:#25d366">Б</div><div><b>Борис Флорист</b><p>📷 Фотография</p></div><span class="unread">1</span></div>
+        <div class="chat-row"><div class="av" style="background:#a5d6a7">В</div><div><b>Виктория</b><p>Нет сообщений</p></div></div>
+        <div class="chat-row"><div class="av" style="background:#81c784">Т</div><div><b>Томаты-2026 🍅</b><p>Как растут твои томаты?</p></div></div>
+        <div style="padding:16px;text-align:center;color:#8696a0;font-size:12px">Чаты сортируются по последнему сообщению — как в <code>GET /api/chats</code></div>
+      </div></div>
+      <!-- Phone 2: live chat demo -->
+      <div class="phone"><div class="scr">
+        <div class="ph-head"><span>←</span><div class="av">К</div><div>Клуб садоводов<small>Группа</small></div><span style="margin-left:auto">⋮</span></div>
+        <div class="ph-body" id="liveChat">
+          <div class="msg"><span class="who">Анна Садовод</span><br>Привет! Как растут твои томаты? 🍅<span class="t">09:41</span></div>
+          <div class="msg me">Взошли все! Вот фото рассады 📷<span class="t">09:42</span></div>
+        </div>
+        <div class="ph-input"><span>🖼️</span><div class="box">Введите сообщение</div><div class="send">➤</div></div>
+      </div></div>
+    </div>
+    <p class="tiny mt reveal">Мокапы выше — точная CSS-копия интерфейса из <code>src/pages/Home.tsx</code>: те же цвета <code>#00a884</code>, <code>#efeae2</code>, <code>#d9fdd3</code>, <code>#f0f2f5</code>. Диалог справа — живая JS-анимация в этом файле.</p>
+    <div class="scroll-hint">Листайте вниз ↓ &nbsp;·&nbsp; или нажимайте <span class="kbd">→</span></div>
+  </div>
+</section>
+
+<div class="marquee" aria-hidden="true"><div class="track" id="mq"></div></div>
+
+<!-- ============ 2. NUMBERS ============ -->
+<section class="dark" id="numbers">
+  <div class="wrap">
+    <p class="eyebrow reveal">Проект в цифрах · источник: репозиторий, коммит f3b7500</p>
+    <h2 class="reveal">Не «прототип».<br>А <span class="grad">1 296 строк</span> работающего кода.</h2>
+    <p class="lead reveal" style="max-width:820px">Каждая цифра на этом слайде посчитана прямо по файлам репозитория MasangerECO 21 октября 2026 года. Никакого маркетинга — только <code>wc -l</code>, <code>package.json</code> и <code>server.ts</code>.</p>
+    <div class="stat-grid mt-lg">
+      <div class="stat reveal"><div class="bignum"><span data-count="1296">0</span></div><div class="stat-label">строк исходного кода (TS/TSX/CSS/HTML без lock-файла)</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="25">0</span></div><div class="stat-label">файлов в репозитории — от Dockerfile до service worker</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="443">0</span></div><div class="stat-label">строк в server.ts — весь бэкенд в одном файле</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="415">0</span></div><div class="stat-label">строк в Home.tsx — главный экран мессенджера</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="11">0</span></div><div class="stat-label">HTTP-эндпоинтов API (+ SPA-fallback)</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="4">0</span></div><div class="stat-label">таблицы SQLite + 2 индекса + WAL-режим</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="25">0</span></div><div class="stat-label">автоматических E2E-проверок в scripts/e2e-test.mjs</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="10">0</span><span style="font-size:.45em"> МБ</span></div><div class="stat-label">максимум одной фотографии (multer, только image/*)</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="17">0</span></div><div class="stat-label">production-зависимостей + 10 dev-зависимостей</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="4">0</span></div><div class="stat-label">страницы фронтенда: Home, Login, Register, Profile</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="3000">0</span></div><div class="stat-label">порт по умолчанию — один процесс на всё</div></div>
+      <div class="stat reveal"><div class="bignum"><span data-count="2">0</span></div><div class="stat-label">команды до запуска: npm install → npm run dev</div></div>
+    </div>
+    <div class="callout mt-lg reveal">💡 <b>Факт из кода:</b> пакет <code>motion</code> (12.23.24) и <code>@google/genai</code> установлены в <code>package.json</code>, но в текущем коде не импортируются — это задел на анимации и ИИ-функции. В <code>metadata.json</code> проекта прямо заявлена возможность <code>MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API</code>.</div>
+  </div>
+</section>
+
+<!-- ============ 3. WHY / PERSONAS ============ -->
+<section class="light" id="why">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Зачем садоводам свой мессенджер</p>
+    <h2 class="reveal">Сад — это сообщество.<br>Сообществу нужен свой дом.</h2>
+    <p class="lead reveal" style="max-width:840px;margin:0 auto">Обычные мессенджеры тонут в рабочих чатах. «Эко-культура» собирает людей вокруг одного дела: показать урожай, спросить про рассаду, договориться об обмене семенами — и не потерять это между мемами и новостями.</p>
+    <div class="grid3 mt-lg" style="text-align:left">
+      <div class="card reveal"><span class="icon">👩‍🌾</span><h4>Анна Садовод</h4><p>Главная героиня E2E-тестов проекта. Регистрируется первой, создаёт группу «Клуб садоводов», отправляет «Привет! Как растут твои томаты?» и обновляет профиль: «Люблю розы» 🌹.</p><div class="chiprow"><span class="chip">scripts/e2e-test.mjs</span><span class="chip">persona №1</span></div></div>
+      <div class="card reveal"><span class="icon">🧑‍🌾</span><h4>Борис Флорист</h4><p>Второй тестовый пользователь. Получает сообщение в реальном времени через Socket.IO, видит бейдж «1 непрочитанное» и отвечает фотографией 1×1 PNG — классика тестирования загрузок.</p><div class="chiprow"><span class="chip">realtime-получатель</span><span class="chip">persona №2</span></div></div>
+      <div class="card reveal"><span class="icon">🚪</span><h4>Виктория — «чужая»</h4><p>Третий персонаж тестов: проверяет контроль доступа. Её попытка прочитать чужой чат заканчивается честными <code>403 Forbidden</code> — «Вы не в этом чате». Безопасность доказана тестом, а не словами.</p><div class="chiprow"><span class="chip">access control</span><span class="chip">HTTP 403</span></div></div>
+    </div>
+    <p class="small mt reveal">Все три персоны — не выдумка презентации: они дословно живут в <code>scripts/e2e-test.mjs</code> (телефоны вида <code>79001111…</code>, <code>79002222…</code>, <code>79003333…</code>).</p>
+  </div>
+</section>
+
+<!-- ============ 4. PRODUCT TOUR ============ -->
+<section class="dark2" id="product">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Тур по продукту · 4 экрана</p>
+      <h2 class="reveal">Знакомо с первой секунды.<br><span class="grad">Как WhatsApp — только про сад.</span></h2>
+      <p class="lead reveal" style="max-width:820px;margin:0 auto">Интерфейс сознательно повторяет привычные паттерны: слева список чатов, справа переписка, зелёный акцент <code>#00a884</code>. Ноль обучения — садовод любого возраста разберётся без инструкции.</p>
+      <div class="mt reveal"><div class="seg" id="tourTabs">
+        <button class="on" data-tour="home">💬 Главная</button><button data-tour="login">🔐 Вход</button><button data-tour="register">🌱 Регистрация</button><button data-tour="profile">👤 Профиль</button>
+      </div></div>
+    </div>
+    <div id="tourBody" class="mt-lg reveal"></div>
+    <div class="grid3 mt-lg" style="text-align:left">
+      <div class="card reveal"><h4>📱 Мобильность без компромиссов</h4><p>На телефоне список чатов и переписка — два отдельных экрана с кнопкой «← Назад» (<code>hidden md:flex</code>). Шапки зафиксированы на 64 px, область сообщений прокручивается отдельно.</p></div>
+      <div class="card reveal"><h4>⌨️ Ввод, который не бесит</h4><p><code>Enter</code> — отправить, <code>Shift+Enter</code> — новая строка. Поле ввода само растёт до 128 px под длинный рецепт подкормки, а прикреплённое фото можно снять одним нажатием «Удалить».</p></div>
+      <div class="card reveal"><h4>🕐 Время по-человечески</h4><p>Функция <code>formatTime</code>: сегодня — «14:32», вчера и раньше — «12.05». Свои сообщения — справа на салатовом <code>#d9fdd3</code>, чужие — слева на белом. В группе имя отправителя подсвечено оранжевым <code>#e67e22</code>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. FEATURES BENTO ============ -->
+<section class="light" id="features">
+  <div class="wrap">
+    <p class="eyebrow reveal">Возможности · все 8 из README — и ещё несколько из кода</p>
+    <h2 class="reveal">Всё, что нужно.<br>Ничего лишнего.</h2>
+    <div class="bento mt-lg">
+      <div class="card w3 reveal"><span class="icon">⚡</span><h3>Реальное время без F5</h3><p>Socket.IO: сервер сам подключает пользователя ко всем его чатам (<code>chat_{id}</code>) и к личной комнате (<code>user_{id}</code>). Новое сообщение прилетает событием <code>new_message</code> мгновенно — с дедупликацией по <code>id</code> на клиенте.</p><div class="foot"><span class="pill">Socket.IO 4.8.3 · комнаты · JWT-handshake</span></div></div>
+      <div class="card w3 reveal"><span class="icon">📷</span><h3>Фото до 10 МБ</h3><p>Multer сохраняет только <code>image/*</code> в <code>uploads/</code> под уникальным именем <code>Date.now()-random.ext</code>. Текстовый файл вместо фото? Сервер вежливо ответит <code>400 «Можно загружать только изображения»</code> — и это покрыто тестом.</p><div class="foot"><span class="pill">multer 2.1.1 · лимит 10×1024×1024</span></div></div>
+      <div class="card w2 reveal"><span class="icon">🔐</span><h3>Вход по телефону</h3><p>Номер нормализуется: <code>+7 (900) 123-45-67</code> превращается в цифры. Пароль — bcrypt, 10 раундов. Сессия — JWT в <code>localStorage</code>.</p></div>
+      <div class="card w2 reveal"><span class="icon">🔍</span><h3>Поиск везде</h3><p>Одна строка ищет по чатам <i>и</i> по людям одновременно. Нашли человека без чата? Одно нажатие — диалог создан (сервер переиспользует существующий direct-чат).</p></div>
+      <div class="card w2 reveal"><span class="icon">📩</span><h3>Непрочитанные: 99+</h3><p>Счётчик на каждого участника: <code>last_read_at</code> против времени сообщений. Бейдж показывает честное число — а после 99 скромно пишет «99+».</p></div>
+      <div class="card w3 reveal"><span class="icon">👥</span><h3>Личные и групповые чаты</h3><p>Direct-чат нельзя создать дважды — сервер найдёт существующий SQL-запросом с двумя JOIN. Группа создаётся чекбоксами с дедупликацией участников через <code>Set</code>: создатель никогда не добавится дважды.</p><div class="foot"><span class="pill">type: direct | group</span></div></div>
+      <div class="card w3 reveal"><span class="icon">🔔</span><h3>Уведомления и PWA</h3><p>Браузерные уведомления о сообщениях из других чатов («Новое сообщение от …», фото — «📷 Фотография»), манифест <code>display: standalone</code>, service worker и тема <code>#00a884</code>. Устанавливается как приложение.</p><div class="foot"><span class="pill">manifest.json · sw.js · Notification API</span></div></div>
+      <div class="card w6 reveal"><span class="icon">👤</span><h3>Профиль с характером</h3><p>Имя, «о себе» и аватар с живым превью (<code>URL.createObjectURL</code>) до отправки на сервер. Пустое имя сервер не примет — <code>400 «Имя не может быть пустым»</code>. Нет аватара? Интерфейс нарисует круг с первой буквой имени на фирменном <code>#81c784</code>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. REALTIME ============ -->
+<section class="dark" id="realtime">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Глубокое погружение · Realtime</p>
+    <h2 class="reveal">Сообщение летит.<br><span class="grad2">Страница — нет.</span></h2>
+    <p class="lead reveal" style="max-width:840px;margin:0 auto">Вот точный путь одного сообщения «Как растут твои томаты?» — от нажатия Enter до экрана собеседника. Семь шагов, ноль перезагрузок.</p>
+    <div class="flow mt-lg" style="text-align:center">
+      <div class="fbox reveal"><span class="icon">⌨️</span><b>1. Enter</b><p>Home.tsx собирает FormData: text + image, мгновенно очищает поле</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">🛡️</span><b>2. Проверка</b><p>authenticateToken → multer (≤10 МБ) → «вы участник чата?» иначе 403</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">🗄️</span><b>3. SQLite</b><p>INSERT в messages с ISO-временем now(); отправителю — last_read_at = now</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">📡</span><b>4. Broadcast</b><p>io.to(`chat_${id}`).emit('new_message', message) — всем в комнате</p></div>
+    </div>
+    <div class="flow mt" >
+      <div class="fbox reveal"><span class="icon">💬</span><b>5. У собеседника</b><p>Если чат открыт — сообщение в список + плавный скролл за 50 мс</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">✅</span><b>6. Прочитано</b><p>markRead() → POST /read → бейдж непрочитанных гаснет локально сразу</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">🔔</span><b>7. Если чат закрыт</b><p>Список чатов обновляется + системное уведомление с именем отправителя</p></div>
+    </div>
+    <div class="grid3 mt-lg" style="text-align:left">
+      <div class="card reveal"><h4>🔑 Сокет без токена не пройдёт</h4><p><code>io.use()</code> проверяет JWT из <code>handshake.auth.token</code> до подключения. Нет токена или подпись битая — <code>Authentication error</code>, соединение не состоится.</p></div>
+      <div class="card reveal"><h4>🚪 Комнаты на любой случай</h4><p>При подключении пользователь автоматически входит во все свои <code>chat_*</code> комнаты (один SQL-запрос) плюс персональную <code>user_*</code> — задел для личных уведомлений. Открытие нового чата — событие <code>join_chat</code>.</p></div>
+      <div class="card reveal"><h4>🧹 Чистый жизненный цикл</h4><p>SocketProvider создаёт сокет только при наличии токена и пользователя, а при выходе — <code>socket.close()</code>. Слушатель <code>new_message</code> снимается через <code>socket.off</code> при размонтировании. Никаких утечек.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. ARCHITECTURE ============ -->
+<section class="white" id="arch">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Архитектура · один сервер — вся система</p>
+    <h2 class="reveal">Один процесс.<br>Порт 3000. Ноль микросервисов.</h2>
+    <p class="lead reveal" style="max-width:840px;margin:0 auto">Express отдаёт API, статику продакшена (или Vite-middleware в разработке), файлы из <code>uploads/</code> — и тут же живёт Socket.IO. Просто деплоить, просто объяснять жюри турнира.</p>
+    <div class="flow mt-lg">
+      <div class="fbox reveal"><span class="icon">⚛️</span><b>React 19 SPA</b><p>4 страницы, 2 контекста (Auth, Socket), React Router 7, ProtectedRoute</p></div><div class="arrow">⇄</div>
+      <div class="fbox reveal"><span class="icon">🟢</span><b>Node.js · Express 4</b><p>server.ts (443 строки): REST + Socket.IO + раздача Vite/dist</p></div><div class="arrow">⇄</div>
+      <div class="fbox reveal"><span class="icon">🪶</span><b>SQLite (WAL)</b><p>better-sqlite3, файл eco_culture.db, синхронные запросы, 2 индекса</p></div><div class="arrow">+</div>
+      <div class="fbox reveal"><span class="icon">🖼️</span><b>uploads/</b><p>Фотографии на диске, раздача через express.static по /uploads</p></div>
+    </div>
+    <div class="grid2 mt-lg" style="text-align:left">
+      <div class="card reveal"><h4>🧭 Маршруты фронтенда (App.tsx, 44 строки)</h4>
+        <ul class="checklist mt">
+          <li><code>/login</code> — вход по телефону и паролю (Login.tsx, 62 строки)</li>
+          <li><code>/register</code> — регистрация: имя, телефон, пароль (Register.tsx, 68 строк)</li>
+          <li><code>/</code> — мессенджер, защищён ProtectedRoute (Home.tsx, 415 строк)</li>
+          <li><code>/profile</code> — имя, bio, аватар (ProfileSettings.tsx, 103 строки)</li>
+          <li>Нет токена в localStorage → мгновенный <code>Navigate to="/login"</code></li>
+        </ul></div>
+      <div class="card reveal"><h4>🔀 Dev и Production — один код</h4><p>Если <code>NODE_ENV=production</code> (или просто существует <code>dist/index.html</code>) — Express раздаёт собранный фронтенд и SPA-fallback на все пути. В разработке поднимается Vite в <code>middlewareMode</code> с HMR и <code>allowedHosts: true</code> для работы за прокси-превью. Сборка: <code>vite build</code> + esbuild бандлит сервер в <code>dist/server.cjs</code>.</p>
+        <div class="chiprow"><span class="chip">npm run dev</span><span class="chip">npm run build</span><span class="chip">npm start</span><span class="chip">npm run lint = tsc --noEmit</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. STACK ============ -->
+<section class="dark2" id="stack">
+  <div class="wrap center">
+    <p class="eyebrow blue reveal">Технологический стек · точные версии из package.json</p>
+    <h2 class="reveal">Современно — это не лозунг.<br>Это <span class="grad">React 19 и Vite 6.</span></h2>
+    <div class="mt reveal"><div class="seg" id="stackTabs">
+      <button class="on" data-stack="front">⚛️ Фронтенд</button><button data-stack="back">🟢 Бэкенд</button><button data-stack="data">🗄️ Данные и безопасность</button><button data-stack="dev">🛠️ Сборка и деплой</button>
+    </div></div>
+    <div id="stackBody" class="mt-lg reveal" style="text-align:left"></div>
+    <div class="grid2 mt-lg" style="text-align:left;align-items:start">
+      <div class="card reveal"><h4>🍩 Из чего состоит код (1 296 строк)</h4><canvas class="chart" id="donut" width="520" height="300"></canvas>
+        <div class="legend"><span><i style="background:#00a884"></i>Бэкенд server.ts — 443 (34%)</span><span><i style="background:#30d158"></i>Страницы — 648 (50%)</span><span><i style="background:#64d2ff"></i>Контексты+App+main — 154 (12%)</span><span><i style="background:#ffd60a"></i>HTML/CSS/конфиг — 51 (4%)</span></div></div>
+      <div class="card reveal"><h4>⚙️ TypeScript без фанатизма</h4><p><code>tsconfig.json</code>: target ES2022, <code>moduleResolution: bundler</code>, <code>jsx: react-jsx</code>, алиас <code>@/*</code> на корень проекта, <code>noEmit</code> — типы проверяются, JS собирает Vite/esbuild. Интерфейс <code>User</code> типизирован; сервер сознательно использует <code>any</code> на границах Express — прагматично для одного файла.</p><h4 class="mt">🎨 Tailwind CSS 4 — одной строкой</h4><p>Весь <code>src/index.css</code> — это <code>@import "tailwindcss";</code> (1 строка, 23 байта). Плагин <code>@tailwindcss/vite</code> делает остальное. Иконки — Lucide (Leaf для логотипа 🍃 — фирменная «фишка» бренда).</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. DATABASE ============ -->
+<section class="light" id="db">
+  <div class="wrap">
+    <p class="eyebrow reveal">База данных · SQLite, файл eco_culture.db</p>
+    <h2 class="reveal">4 таблицы. 2 индекса.<br>И одна умная миграция.</h2>
+    <p class="lead reveal" style="max-width:840px">Схема создаётся автоматически при первом запуске (<code>CREATE TABLE IF NOT EXISTS</code>). Включён WAL-режим — чтение не блокирует запись. Старым базам без <code>last_read_at</code> колонка добавится сама через <code>PRAGMA table_info</code> + <code>ALTER TABLE</code>.</p>
+    <div class="grid4 mt-lg">
+      <div class="card reveal"><h4>👤 users</h4><p style="font-family:ui-monospace,monospace;font-size:13px">id PK · phone UNIQUE NOT NULL · password NOT NULL (bcrypt-хеш) · name NOT NULL · bio · avatar · created_at</p><p>Телефон — уникальный логин. Пароль в открытом виде не существует нигде.</p></div>
+      <div class="card reveal"><h4>💬 chats</h4><p style="font-family:ui-monospace,monospace;font-size:13px">id PK · type NOT NULL ('direct'|'group') · name · avatar · created_at</p><p>У direct-чатов имя и аватар подставляются из профиля собеседника на лету.</p></div>
+      <div class="card reveal"><h4>🤝 chat_participants</h4><p style="font-family:ui-monospace,monospace;font-size:13px">chat_id · user_id · last_read_at · UNIQUE(chat_id, user_id)</p><p>Сердце системы непрочитанных: один timestamp вместо флага на каждое сообщение.</p></div>
+      <div class="card reveal"><h4>✉️ messages</h4><p style="font-family:ui-monospace,monospace;font-size:13px">id PK · chat_id NOT NULL · sender_id NOT NULL · text · image_url · created_at</p><p>Текст и фото — в одной записи: фотография с подписью работает из коробки.</p></div>
+    </div>
+    <div class="grid2 mt">
+      <div class="card reveal"><h4>🚀 Индексы, которые реально работают</h4><p><code>idx_messages_chat (chat_id, id)</code> — история чата и «последнее сообщение» находятся одним проходом по индексу; сортировка списка чатов — по <code>MAX(id)</code> последнего сообщения, а не по строкам дат. <code>idx_participants_user (user_id)</code> — все чаты пользователя при подключении сокета одним запросом.</p></div>
+      <div class="card reveal"><h4>🧮 Как считаются непрочитанные</h4><p>Один SQL-запрос на весь список чатов: для каждого чата — <code>COUNT(*)</code> сообщений, где отправитель не вы и <code>created_at &gt; last_read_at</code> (или отметки чтения ещё не было). Ответили в чате — ваш <code>last_read_at</code> обновился автоматически: нельзя «не прочитать» то, на что ответил.</p></div>
+    </div>
+    <div class="term mt reveal"><div class="term-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>server.ts · схема базы (фрагмент дословно)</span></div>
+<pre><span class="b">const</span> db = <span class="b">new</span> Database(process.env.DB_PATH || <span class="g">'eco_culture.db'</span>);
+db.pragma(<span class="g">'journal_mode = WAL'</span>);
+<span class="c">-- 4 таблицы + 2 индекса создаются при первом старте</span>
+<span class="y">CREATE INDEX IF NOT EXISTS</span> idx_messages_chat <span class="y">ON</span> messages (chat_id, id);
+<span class="y">CREATE INDEX IF NOT EXISTS</span> idx_participants_user <span class="y">ON</span> chat_participants (user_id);
+<span class="c">// Миграция: базам без last_read_at колонка добавится автоматически</span></pre></div>
+  </div>
+</section>
+
+<!-- ============ 10. API ============ -->
+<section class="dark" id="api">
+  <div class="wrap">
+    <p class="eyebrow reveal">API-атлас · 11 эндпоинтов, ни одного лишнего</p>
+    <h2 class="reveal">Полная карта API.<br><span class="grad">Фильтруйте. Изучайте.</span></h2>
+    <p class="lead reveal" style="max-width:820px">Все запросы, кроме <code>/api/auth/*</code> и <code>/api/health</code>, требуют заголовок <code>Authorization: Bearer &lt;token&gt;</code>. Без токена — <code>401</code>, с битым — <code>403</code>.</p>
+    <div class="mt reveal"><div class="seg" id="apiFilter">
+      <button class="on" data-f="all">Все (11)</button><button data-f="auth">🔐 Авторизация (3)</button><button data-f="users">👤 Пользователи (2)</button><button data-f="chats">💬 Чаты и сообщения (5)</button><button data-f="sys">🩺 Система (1)</button>
+    </div></div>
+    <div class="tblwrap mt reveal"><table id="apiTable">
+      <thead><tr><th>Метод</th><th>Путь</th><th>Что делает</th><th>Тело / детали</th></tr></thead>
+      <tbody>
+        <tr data-g="sys"><td><span class="m get">GET</span></td><td><code>/api/health</code></td><td>Проверка работоспособности</td><td><code>{ ok: true, time }</code> — без авторизации</td></tr>
+        <tr data-g="auth"><td><span class="m post">POST</span></td><td><code>/api/auth/register</code></td><td>Регистрация, сразу выдаёт JWT</td><td><code>{phone, password, name}</code>; дубликат телефона → 400</td></tr>
+        <tr data-g="auth"><td><span class="m post">POST</span></td><td><code>/api/auth/login</code></td><td>Вход, проверка bcrypt-пароля</td><td><code>{phone, password}</code>; неверный пароль → 400</td></tr>
+        <tr data-g="auth"><td><span class="m get">GET</span></td><td><code>/api/auth/me</code></td><td>Текущий пользователь по токену</td><td>id, phone, name, bio, avatar</td></tr>
+        <tr data-g="users"><td><span class="m get">GET</span></td><td><code>/api/users</code></td><td>Все пользователи, кроме себя</td><td>Сортировка по имени <code>COLLATE NOCASE</code></td></tr>
+        <tr data-g="users"><td><span class="m put">PUT</span></td><td><code>/api/users/profile</code></td><td>Обновить профиль и аватар</td><td>multipart: <code>name, bio, avatar</code> (image ≤10 МБ)</td></tr>
+        <tr data-g="chats"><td><span class="m get">GET</span></td><td><code>/api/chats</code></td><td>Чаты + последнее сообщение + unread</td><td>Сортировка по <code>MAX(messages.id)</code></td></tr>
+        <tr data-g="chats"><td><span class="m post">POST</span></td><td><code>/api/chats</code></td><td>Создать direct- или group-чат</td><td><code>{type, participantIds, name}</code>; direct переиспользуется</td></tr>
+        <tr data-g="chats"><td><span class="m get">GET</span></td><td><code>/api/chats/:id/messages</code></td><td>История сообщений чата</td><td>Не участник → 403; порядок по id ASC</td></tr>
+        <tr data-g="chats"><td><span class="m post">POST</span></td><td><code>/api/chats/:id/messages</code></td><td>Отправить текст и/или фото</td><td>multipart: <code>text, image</code>; пустое → 400; broadcast в комнату</td></tr>
+        <tr data-g="chats"><td><span class="m post">POST</span></td><td><code>/api/chats/:id/read</code></td><td>Отметить чат прочитанным</td><td>Обновляет <code>last_read_at</code>; ответ <code>{ok:true}</code></td></tr>
+      </tbody>
+    </table></div>
+    <div class="grid3 mt">
+      <div class="card reveal"><h4>📡 Socket.IO протокол</h4><p>Подключение: <code>io({ auth: { token } })</code>. Клиент → сервер: <code>join_chat(chatId)</code>. Сервер → клиент: <code>new_message</code> с полным объектом сообщения (включая <code>sender_name</code> и <code>sender_avatar</code> — JOIN уже сделан на сервере).</p></div>
+      <div class="card reveal"><h4>🧯 Ошибки — по-русски и по делу</h4><p>«Заполните все поля», «Этот номер уже зарегистрирован», «Вы не в этом чате», «Файл слишком большой (максимум 10 МБ)». Глобальный обработчик multer-ошибок стоит после всех маршрутов — Express-стиль как по учебнику.</p></div>
+      <div class="card reveal"><h4>📏 Время — только ISO</h4><p>Хелпер <code>now()</code> = <code>new Date().toISOString()</code> везде: пользователи, чаты, сообщения, отметки чтения. Сравнение дат в SQL работает строково и предсказуемо — без сюрпризов с часовыми поясами в сортировке.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11. SECURITY ============ -->
+<section class="light" id="security">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Безопасность · честно и без магии</p>
+    <h2 class="reveal">Паролей в базе нет.<br>Есть только их тени.</h2>
+    <div class="flow mt-lg">
+      <div class="fbox reveal"><span class="icon">📱</span><b>Телефон → цифры</b><p>normalizePhone срезает всё, кроме \d. «+7 900 111-…» и «7900111…» — один аккаунт</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">🧂</span><b>bcrypt ×10</b><p>hashSync(password, 10) — соль и 2¹⁰ раундов. Проверка: compareSync</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">🎫</span><b>JWT</b><p>sign({id, phone, name}, JWT_SECRET) — токен у клиента, секрет на сервере</p></div><div class="arrow">→</div>
+      <div class="fbox reveal"><span class="icon">🚧</span><b>Каждый запрос</b><p>authenticateToken на 8 из 11 маршрутов + проверка участника чата</p></div>
+    </div>
+    <div class="grid3 mt-lg" style="text-align:left">
+      <div class="card reveal"><h4>✅ Что сделано правильно</h4><ul class="checklist mt">
+        <li>Пароль никогда не возвращается клиенту (<code>const {password: _pw, ...userInfo}</code>)</li>
+        <li>SQL — только подготовленные запросы <code>db.prepare(…?)</code>: инъекциям негде жить</li>
+        <li>Загрузки: только <code>image/*</code>, ≤10 МБ, случайные имена файлов</li>
+        <li>Чужой чат недоступен ни для чтения, ни для записи (403, покрыто тестом)</li>
+        <li>Минимум 5 цифр в телефоне, непустые имя/сообщение/название группы</li></ul></div>
+      <div class="card reveal"><h4>⚠️ Что честно стоит усилить</h4><ul class="checklist mt">
+        <li>Задать свой <code>JWT_SECRET</code> в продакшене (README предупреждает!)</li>
+        <li>Добавить срок жизни токена (<code>expiresIn</code>) и refresh-схему</li>
+        <li>Rate-limit на /login против перебора паролей</li>
+        <li>HTTPS и httpOnly-куки вместо localStorage для токена</li>
+        <li>CORS <code>origin:'*'</code> у Socket.IO сузить до своего домена</li></ul></div>
+      <div class="card reveal"><h4>🔢 Коды ответов системы</h4><p><b>200</b> — успех · <b>400</b> — валидация/дубликат/неверный пароль · <b>401</b> — нет токена · <b>403</b> — токен битый или «вы не в этом чате» · <b>404</b> — пользователь не найден · <b>500</b> — ошибка базы (с логом в консоль сервера). Предсказуемый контракт для любого клиента.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12. CODE ANATOMY ============ -->
+<section class="dark" id="code">
+  <div class="wrap">
+    <p class="eyebrow reveal">Анатомия кода · каждый файл на своём месте</p>
+    <h2 class="reveal">25 файлов.<br><span class="grad2">Ноль хлама.</span></h2>
+    <div class="grid2 mt-lg" style="align-items:start">
+      <div class="reveal">
+        <div class="tree"><span class="d">MasangerECO/</span>
+├─ <span class="f">server.ts</span>            <span class="n">443</span> <span class="c">← весь бэкенд</span>
+├─ <span class="f">index.html</span>            <span class="n">28</span> <span class="c">← PWA + SW-регистрация</span>
+├─ <span class="f">vite.config.ts</span>        <span class="n">22</span> <span class="c">← React + Tailwind плагины</span>
+├─ <span class="f">Dockerfile</span> <span class="c">· README.md · .env.example</span>
+├─ <span class="d">src/</span>
+│  ├─ <span class="f">main.tsx</span>           <span class="n">10</span>
+│  ├─ <span class="f">App.tsx</span>            <span class="n">44</span> <span class="c">← маршруты</span>
+│  ├─ <span class="f">index.css</span>           <span class="n">1</span> <span class="c">← @import "tailwindcss"</span>
+│  ├─ <span class="d">contexts/</span>
+│  │  ├─ <span class="f">AuthContext.tsx</span>   <span class="n">65</span>
+│  │  └─ <span class="f">SocketContext.tsx</span> <span class="n">35</span>
+│  └─ <span class="d">pages/</span>
+│     ├─ <span class="f">Home.tsx</span>          <span class="n">415</span> <span class="c">← мессенджер</span>
+│     ├─ <span class="f">Login.tsx</span>          <span class="n">62</span>
+│     ├─ <span class="f">Register.tsx</span>       <span class="n">68</span>
+│     └─ <span class="f">ProfileSettings.tsx</span> <span class="n">103</span>
+├─ <span class="d">public/</span> <span class="c">manifest.json · sw.js · favicon.svg</span>
+└─ <span class="d">scripts/</span><span class="f">e2e-test.mjs</span>   <span class="n">163</span> <span class="c">← 25 проверок</span></div>
+        <p class="small mt">Итого исходников: <b>1 296 строк</b> (без package-lock.json на 5 179 строк). Репозиторий целиком — около 325 КБ без .git и node_modules: поместится на дискету… почти.</p>
+      </div>
+      <div class="card reveal"><h4>📊 Строки кода по файлам</h4><canvas class="chart" id="bars" width="560" height="380"></canvas>
+        <p>Два «тяжеловеса» — <code>server.ts</code> (443) и <code>Home.tsx</code> (415) — несут 66% всей логики. Остальное — тонкие, сфокусированные модули: контексты по 35–65 строк, страницы входа — по 62–68.</p></div>
+    </div>
+    <div class="grid3 mt">
+      <div class="card reveal"><h4>🧠 Home.tsx изнутри</h4><p>12 состояний <code>useState</code> + 3 ref: чаты, сообщения, поиск, группы, отправка… Два главных <code>useEffect</code>: загрузка при появлении токена и подписка на сокет. Поиск — чистый <code>filter</code> по уже загруженным данным: мгновенно, без запросов.</p></div>
+      <div class="card reveal"><h4>🏗️ server.ts изнутри</h4><p>Сверху вниз: константы → хелперы (<code>now</code>, <code>normalizePhone</code>) → схема БД + миграция → Express + multer → auth-middleware → 11 маршрутов → обработчик ошибок загрузки → Socket.IO с JWT-гейтом → Vite/dist → <code>listen(3000, "0.0.0.0")</code>.</p></div>
+      <div class="card reveal"><h4>🎨 Палитра интерфейса</h4><p style="line-height:2">
+        <span style="background:#00a884;color:#fff;padding:3px 10px;border-radius:6px">#00a884 акцент</span>
+        <span style="background:#008069;color:#fff;padding:3px 10px;border-radius:6px">#008069 hover</span>
+        <span style="background:#efeae2;color:#111;padding:3px 10px;border-radius:6px">#efeae2 фон чата</span>
+        <span style="background:#d9fdd3;color:#111;padding:3px 10px;border-radius:6px">#d9fdd3 свои</span>
+        <span style="background:#f0f2f5;color:#111;padding:3px 10px;border-radius:6px">#f0f2f5 шапки</span>
+        <span style="background:#81c784;color:#fff;padding:3px 10px;border-radius:6px">#81c784 аватары</span><br>
+        <span class="small">Тексты: #111b21 основной, #667781 вторичный, #54656f иконки. Знакомые по WhatsApp оттенки — специально.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13. TESTS ============ -->
+<section class="white" id="tests">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Тестирование · scripts/e2e-test.mjs, 163 строки</p>
+      <h2 class="reveal">25 проверок.<br><span style="color:#0a7d33">ALL TESTS PASSED.</span></h2>
+      <p class="lead reveal" style="max-width:840px;margin:0 auto">Сквозной тест поднимает двух пользователей и два живых сокета и проходит весь сценарий: от регистрации до запрета чужого доступа. Это не «юнит-тесты ради галочки» — это репетиция реальной жизни продукта.</p>
+    </div>
+    <div class="tblwrap mt-lg reveal"><table>
+      <thead><tr><th>#</th><th>Проверка (дословно из теста)</th><th>Что доказывает</th><th>Итог</th></tr></thead>
+      <tbody id="testRows"></tbody>
+    </table></div>
+    <div class="grid3 mt" style="text-align:left">
+      <div class="card reveal"><h4>🖼️ PNG размером 1×1</h4><p>Тест отправляет настоящий PNG из base64-строки (<code>iVBORw0KGgo…</code>), затем скачивает его обратно по <code>image_url</code> и требует <code>200</code>. А текстовый файл под видом картинки обязан получить <code>400</code>.</p></div>
+      <div class="card reveal"><h4>⏱️ Realtime с таймаутом 5 секунд</h4><p><code>Promise.race</code>: либо Борис получает <code>new_message</code> с тем же <code>id</code>, что отправила Анна, либо через 5000 мс — честный FAIL. Никаких «подождём и надеемся».</p></div>
+      <div class="card reveal"><h4>🔢 Непрочитанные — трижды</h4><p>Сценарий проверяет счётчик в трёх точках: у Бориса «1» до ответа → «0» после его ответа → у Анны «1» → «0» после явного <code>POST /read</code>. Вся механика <code>last_read_at</code> под контролем.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 14. TOURNAMENT ============ -->
+<section class="dark2" id="tournament">
+  <div class="wrap center">
+    <p class="eyebrow orange reveal">🏆 Турнир технологий · почему выбраны именно эти инструменты</p>
+    <h2 class="reveal">Каждое решение в проекте —<br>победитель своего матча.</h2>
+    <p class="lead reveal" style="max-width:860px;margin:0 auto">Представим выбор стека как турнирную сетку. В каждом «матче» — реальная альтернатива и честная причина, почему в этом проекте выиграл именно текущий вариант. Нажмите на матч, чтобы увидеть аргументы.</p>
+    <div class="bracket mt-lg" style="text-align:left">
+      <div class="round">
+        <div class="match reveal" data-why="SQLite не требует отдельного сервера, хранится в одном файле eco_culture.db, а better-sqlite3 даёт синхронные запросы без пула соединений. Для мессенджера сообщества и демо на турнире — запуск за секунды. PostgreSQL сильнее при тысячах одновременных записей, но это следующий этап масштаба."><div class="vs-row"><span class="win">🪶 SQLite + WAL</span><b>✓</b></div><div class="vs-row"><span class="lose">🐘 PostgreSQL</span><span></span></div><p class="tiny">Матч 1 · База данных · клик = аргументы</p></div>
+        <div class="match reveal" data-why="Socket.IO сам управляет комнатами (chat_12), переподключением и фолбэком транспорта. Голый WebSocket легче, но комнаты, broadcast и авторизацию handshake пришлось бы писать вручную — сотни строк против io.to(...).emit(...)."><div class="vs-row"><span class="win">📡 Socket.IO</span><b>✓</b></div><div class="vs-row"><span class="lose">🔌 Чистый WebSocket</span><span></span></div><p class="tiny">Матч 2 · Realtime · клик = аргументы</p></div>
+        <div class="match reveal" data-why="JWT не хранит состояние на сервере: токен проверяется одной подписью и в REST, и в Socket.IO-handshake. Сессии с куками потребовали бы хранилища сессий. Цена решения: токен в localStorage — в roadmap есть переход на httpOnly-куки."><div class="vs-row"><span class="win">🎫 JWT</span><b>✓</b></div><div class="vs-row"><span class="lose">🍪 Серверные сессии</span><span></span></div><p class="tiny">Матч 3 · Авторизация · клик = аргументы</p></div>
+        <div class="match reveal" data-why="Один timestamp last_read_at на пару (чат, пользователь) заменяет флаг is_read на каждом сообщении: непрочитанные считаются одним COUNT-запросом, а запись при чтении — один UPDATE вместо тысяч. Элегантнее и быстрее."><div class="vs-row"><span class="win">🕐 last_read_at</span><b>✓</b></div><div class="vs-row"><span class="lose">🏳️ is_read у сообщений</span><span></span></div><p class="tiny">Матч 4 · Непрочитанные · клик = аргументы</p></div>
+      </div>
+      <div class="vs reveal">→</div>
+      <div class="round">
+        <div class="match reveal" data-why="React 19 + Vite 6: мгновенный HMR в middleware-режиме прямо внутри Express-процесса, Tailwind 4 одной строкой CSS. Один npm run dev — и фронтенд с бэкендом живут на одном порту 3000 без CORS-танцев в разработке."><div class="vs-row"><span class="win">⚛️ React 19 + Vite 6</span><b>✓</b></div><div class="vs-row"><span class="lose">🧩 Отдельные dev-серверы</span><span></span></div><p class="tiny">Полуфинал · Фронтенд и DX</p></div>
+        <div class="match reveal" data-why="Весь бэкенд — server.ts на 443 строки: читается за один присест, деплоится одной командой Docker, а жюри турнира видит всю систему целиком. Микросервисы добавили бы сеть, очереди и недели работы — без пользы на этом масштабе."><div class="vs-row"><span class="win">🎯 Монолит 1 файл</span><b>✓</b></div><div class="vs-row"><span class="lose">🕸️ Микросервисы</span><span></span></div><p class="tiny">Полуфинал · Архитектура</p></div>
+      </div>
+      <div class="vs reveal">→</div>
+      <div class="round"><div class="card reveal center" style="padding:44px 30px"><div class="trophy">🏆</div><h3 class="mt">Чемпион:<br><span class="grad2">«Эко-культура»</span></h3><p>Простота, которую можно запустить за 2 команды, объяснить за 5 минут и масштабировать, когда сообщество вырастет.</p><p class="mt"><span class="pill">25/25 тестов · 11 API · 0 лишних сервисов</span></p></div></div>
+    </div>
+    <div class="callout mt-lg reveal" id="whyBox" style="text-align:left">👆 Нажмите на любой матч выше — здесь появятся аргументы судей. Честно признаём и сильные стороны проигравших: хороший турнир уважает соперников.</div>
+
+    <h3 class="mt-lg reveal">«Эко-культура» против гигантов: честная таблица</h3>
+    <div class="tblwrap mt reveal"><table style="text-align:left">
+      <thead><tr><th>Возможность</th><th>🌿 Эко-культура</th><th>💬 WhatsApp / Telegram</th><th>Комментарий</th></tr></thead>
+      <tbody>
+        <tr><td>Личные и групповые чаты realtime</td><td>✅ Socket.IO</td><td>✅</td><td>Паритет по базовой функции</td></tr>
+        <tr><td>Фото в сообщениях</td><td>✅ до 10 МБ</td><td>✅ + видео, файлы, голосовые</td><td>Гиганты шире — у нас честный фокус</td></tr>
+        <tr><td>Непрочитанные и «прочитано»</td><td>✅ счётчики 99+</td><td>✅ + галочки доставки</td><td>Доставка/просмотр по юзерам — в roadmap</td></tr>
+        <tr><td>Свой сервер и свои данные</td><td>✅ SQLite-файл у вас</td><td>❌ облако корпорации</td><td>Козырь для локальных сообществ</td></tr>
+        <tr><td>Запуск у себя за 2 команды</td><td>✅ npm / Docker</td><td>❌ невозможно</td><td>Идеально для школ, клубов, СНТ</td></tr>
+        <tr><td>Сквозное шифрование (E2EE)</td><td>❌ (JWT + bcrypt)</td><td>✅</td><td>Честно: это уровень следующего сезона</td></tr>
+        <tr><td>Тематика сообщества садоводов</td><td>✅ в ДНК продукта</td><td>⚪ универсальные</td><td>Ниша — наше главное оружие</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ============ 15. FACTS ============ -->
+<section class="light" id="facts">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow reveal">Очень много интересных фактов · как вы и просили</p>
+      <h2 class="reveal">24 факта: 12 из кода<br>+ 12 из большого мира.</h2>
+      <p class="lead reveal" style="max-width:840px;margin:0 auto">Зелёная метка <span class="src-tag">ИЗ КОДА</span> — факт можно проверить в файлах репозитория. Синяя <span class="src-tag gen">МИР</span> — общеизвестные сведения о технологиях и садоводстве для эрудиции жюри.</p>
+      <div class="mt reveal"><div class="seg" id="factFilter"><button class="on" data-ff="all">Все факты (24)</button><button data-ff="code">🌿 Только из кода (12)</button><button data-ff="world">🌍 Только мир (12)</button></div></div>
+    </div>
+    <div class="grid3 mt-lg" id="factGrid" style="text-align:left"></div>
+  </div>
+</section>
+
+<!-- ============ 16. UX DETAILS ============ -->
+<section class="dark" id="ux">
+  <div class="wrap">
+    <p class="eyebrow purple reveal">Дьявол в деталях · микрорешения из Home.tsx</p>
+    <h2 class="reveal">Большой продукт виден<br>по маленьким вещам.</h2>
+    <div class="grid4 mt-lg">
+      <div class="fact reveal"><span class="num">50 МС</span><h4>Скролл с задержкой</h4><p>После нового сообщения список прокручивается через <code>setTimeout 50</code> — DOM успевает отрисовать сообщение, и анимация получается плавной, а не дёрганой.</p></div>
+      <div class="fact reveal"><span class="num">128 PX</span><h4>Потолок поля ввода</h4><p>Textarea растёт по <code>scrollHeight</code>, но не выше 128 px (<code>max-h-32</code>): длинный рецепт варенья не съест весь экран телефона.</p></div>
+      <div class="fact reveal"><span class="num">99+</span><h4>Скромный бейдж</h4><p>Больше 99 непрочитанных? Бейдж покажет «99+» — как у взрослых мессенджеров. Одна строка тернарного оператора, а выглядит профессионально.</p></div>
+      <div class="fact reveal"><span class="num">300 PX</span><h4>Фото под контролем</h4><p>Картинки в ленте ограничены <code>maxHeight: 300px</code> и <code>object-fit: cover</code> — панорама огорода не разломает вёрстку чата.</p></div>
+      <div class="fact reveal"><span class="num">0 ЗАПРОСОВ</span><h4>Мгновенный поиск</h4><p>Поиск фильтрует уже загруженные чаты и пользователей на клиенте. Результат — при каждом нажатии клавиши, без сетевой задержки и спиннеров.</p></div>
+      <div class="fact reveal"><span class="num">EMPTY STATE</span><h4>Пустота с кнопкой</h4><p>Нет чатов? Не грустная пустота, а иконка MessageCircle и кнопка «Начать первый чат». Не найдено по поиску — честное «Ничего не найдено».</p></div>
+      <div class="fact reveal"><span class="num">ОПТИМИЗМ UI</span><h4>Сначала — мгновенно</h4><p>Поле ввода очищается до ответа сервера, бейдж «прочитано» гаснет локально сразу. Интерфейс не ждёт сеть — он ей доверяет, но проверяет тестами.</p></div>
+      <div class="fact reveal"><span class="num">1 БУКВА</span><h4>Аватар из ничего</h4><p>Нет фото профиля — круг <code>#81c784</code> с первой буквой имени в верхнем регистре. Простое правило <code>(name||'Г')[0]</code> спасает любой список чатов.</p></div>
+    </div>
+    <blockquote class="quote center mt-lg reveal">«Привет! Как растут твои томаты?»<br><span class="small" style="font-size:16px">— первое тестовое сообщение проекта. С него начинается история «Эко-культуры» в e2e-test.mjs 🍅</span></blockquote>
+  </div>
+</section>
+
+<!-- ============ 17. RUN / DEPLOY ============ -->
+<section class="white" id="run">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Запуск и деплой · для жюри и для себя</p>
+    <h2 class="reveal">От клона до чата —<br>две команды.</h2>
+    <div class="grid2 mt-lg" style="text-align:left;align-items:start">
+      <div class="term reveal"><div class="term-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>Терминал · разработка</span><button class="copybtn" data-copy="npm install && npm run dev">Копировать</button></div>
+<pre><span class="c"># Требуется Node.js 18+ (рекомендуется 22+)</span>
+<span class="g">$</span> npm install
+<span class="g">$</span> npm run dev
+<span class="c"># → http://localhost:3000</span>
+<span class="c"># База eco_culture.db создастся сама</span>
+
+<span class="c"># Проверка типов</span>
+<span class="g">$</span> npm run lint        <span class="c"># tsc --noEmit</span>
+
+<span class="c"># Сквозные тесты (сервер должен работать)</span>
+<span class="g">$</span> node scripts/e2e-test.mjs
+<span class="y">ALL TESTS PASSED</span></pre></div>
+      <div class="term reveal"><div class="term-bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><span>Docker · продакшен одной командой</span><button class="copybtn" data-copy="docker build -t ecoculture-messenger . && docker run -p 3000:3000 -v messenger-data:/data ecoculture-messenger">Копировать</button></div>
+<pre><span class="g">$</span> docker build -t ecoculture-messenger .
+<span class="g">$</span> docker run -p 3000:3000 \
+    -v messenger-data:/data \
+    ecoculture-messenger
+<span class="c"># Multi-stage: node:22-bookworm → slim</span>
+<span class="c"># DB_PATH=/data/eco_culture.db</span>
+<span class="c"># UPLOADS_DIR=/data/uploads (volume /data)</span></pre></div>
+    </div>
+    <div class="tblwrap mt reveal" style="text-align:left"><table>
+      <thead><tr><th>Переменная окружения</th><th>По умолчанию</th><th>Зачем</th></tr></thead>
+      <tbody>
+        <tr><td><code>PORT</code></td><td><code>3000</code></td><td>Порт HTTP-сервера (слушает 0.0.0.0)</td></tr>
+        <tr><td><code>JWT_SECRET</code></td><td>встроенный fallback</td><td>Подпись JWT — <b>обязательно свой в продакшене!</b></td></tr>
+        <tr><td><code>DB_PATH</code></td><td><code>eco_culture.db</code></td><td>Путь к файлу SQLite</td></tr>
+        <tr><td><code>UPLOADS_DIR</code></td><td><code>./uploads</code></td><td>Папка фотографий (в Docker — /data/uploads)</td></tr>
+        <tr><td><code>NODE_ENV</code></td><td>авто по наличию dist/</td><td>production = раздача собранного фронтенда</td></tr>
+      </tbody>
+    </table></div>
+    <p class="small mt reveal">Продакшен без Docker: <code>npm run build</code> (vite build + esbuild → dist/server.cjs) затем <code>npm start</code>.</p>
+  </div>
+</section>
+
+<!-- ============ 18. ROADMAP ============ -->
+<section class="dark2" id="roadmap">
+  <div class="wrap center">
+    <p class="eyebrow reveal">Roadmap · следующий сезон 🌱</p>
+    <h2 class="reveal">Что посадим дальше.</h2>
+    <div class="timeline mt-lg">
+      <div class="tl reveal"><span class="when">Сезон 1 · уже растёт ✅</span><h4>Ядро мессенджера</h4><p>Авторизация по телефону, личные/групповые чаты, realtime, фото, поиск, непрочитанные, профили, PWA-уведомления, Docker, 25 E2E-тестов. Коммит f3b7500 — «полная реализация».</p></div>
+      <div class="tl reveal"><span class="when">Сезон 2 · удобство</span><h4>Галочки, реакции и голосовые</h4><p>Статусы «доставлено/прочитано» по пользователям, реакции 🌻 на сообщения, ответы-цитаты, редактирование и удаление, голосовые сообщения для тех, кто в перчатках и в огороде.</p></div>
+      <div class="tl reveal"><span class="when">Сезон 3 · садовый интеллект 🤖</span><h4>ИИ-помощник садовода</h4><p>Задел уже в проекте: <code>@google/genai</code> в зависимостях и <code>MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API</code> в metadata.json. Фото листа → диагноз болезни растения прямо в чате. Календарь посадок с напоминаниями.</p></div>
+      <div class="tl reveal"><span class="when">Сезон 4 · сообщество</span><h4>Обмен и события</h4><p>Витрина обмена семенами и рассадой, каналы советов по культурам (томаты, розы, огурцы), встречи клуба, конкурсы урожая с голосованием фото — настоящий турнир садоводов внутри мессенджера 🏆🍅.</p></div>
+      <div class="tl reveal"><span class="when">Сезон 5 · масштаб и защита</span><h4>PostgreSQL + E2EE + push</h4><p>Переезд на PostgreSQL при росте, сквозное шифрование личных чатов, Web Push вместо локальных уведомлений, срок жизни JWT + refresh, rate-limit и модерация групп.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 19. FAQ ============ -->
+<section class="light" id="faq">
+  <div class="narrow">
+    <div class="center"><p class="eyebrow reveal">Вопросы жюри · отвечаем заранее</p><h2 class="reveal">FAQ</h2></div>
+    <div class="mt-lg reveal">
+      <details open><summary>Это настоящий мессенджер или макет?</summary><div class="a">Настоящий: регистрация, база SQLite, realtime через Socket.IO, загрузка фото на диск. Доказательство — <code>scripts/e2e-test.mjs</code>: 25 сквозных проверок против живого сервера, включая два одновременных сокет-подключения.</div></details>
+      <details><summary>Почему SQLite, а не «взрослая» база?</summary><div class="a">Для сообщества и демо SQLite идеальна: ноль администрирования, один файл, WAL-режим, синхронный драйвер better-sqlite3 без пулов. Схема из 4 таблиц без боли переедет на PostgreSQL, когда вырастет нагрузка — SQL в проекте стандартный.</div></details>
+      <details><summary>Почему весь бэкенд в одном файле на 443 строки?</summary><div class="a">Сознательный выбор: вся система видна целиком, деплой — одной командой, новичку легко читать сверху вниз. При росте файл естественно делится на модули auth/chats/socket — границы уже намечены комментариями разделов.</div></details>
+      <details><summary>Как считаются непрочитанные сообщения?</summary><div class="a">У каждой пары (чат, пользователь) есть <code>last_read_at</code>. Непрочитанные = сообщения других пользователей новее этой отметки, один SQL-COUNT на чат. Открытие чата, ответ в нём или явный <code>POST /read</code> двигают отметку.</div></details>
+      <details><summary>Что будет, если загрузить файл на 50 МБ или .exe?</summary><div class="a">Multer остановит загрузку на лимите 10 МБ и вернёт <code>400 «Файл слишком большой…»</code>, а не-картинку отклонит фильтр <code>image/*</code> с текстом «Можно загружать только изображения». Оба сценария понятны пользователю, второй покрыт тестом.</div></details>
+      <details><summary>Можно ли поставить «Эко-культуру» в своём СНТ/школе?</summary><div class="a">Да: <code>docker build</code> + <code>docker run -p 3000:3000 -v messenger-data:/data …</code> — и у сообщества свой мессенджер на своём сервере. Не забудьте задать собственный <code>JWT_SECRET</code> и поставить HTTPS-прокси.</div></details>
+      <details><summary>При чём тут турнир?</summary><div class="a">Эта презентация подготовлена для защиты проекта на турнире разработчиков: поэтому внутри — турнирная сетка технологий с аргументами «судей», честное сравнение с гигантами и все цифры, которые жюри может проверить по репозиторию. А в roadmap — конкурсы урожая: турнир переедет прямо в продукт 🍅🏆.</div></details>
+      <details><summary>Откуда взяты все цифры презентации?</summary><div class="a">Из репозитория Kaytarby/MasangerECO (коммит f3b7500, ветка main) по состоянию на 21.10.2026: подсчёт строк <code>wc -l</code>, версии — package.json, эндпоинты — grep по server.ts, сценарии — e2e-test.mjs. Общие факты помечены меткой «МИР» и отделены от фактов проекта.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 20. FINAL ============ -->
+<section class="dark center" id="final" style="background:radial-gradient(900px 500px at 50% 110%,rgba(0,168,132,.35),transparent 65%),#000">
+  <div class="narrow">
+    <div style="font-size:64px" class="reveal">🌿</div>
+    <h2 class="reveal" style="font-size:clamp(44px,7vw,84px)">Эко-культура.<br><span class="grad2">Посажено. Полито. Работает.</span></h2>
+    <p class="lead reveal">1 296 строк кода · 11 эндпоинтов · 4 таблицы · 25 тестов · 1 файл презентации, который вы сейчас дочитали до конца. Спасибо!</p>
+    <div class="mt-lg reveal" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+      <button class="btn green" onclick="window.scrollTo({top:0,behavior:'smooth'})">↺ Смотреть сначала</button>
+      <button class="btn" onclick="window.print()">🖨️ Распечатать / в PDF</button>
+      <a class="btn ghost" href="https://github.com/Kaytarby/MasangerECO" target="_blank" rel="noopener">GitHub: Kaytarby/MasangerECO</a>
+    </div>
+    <p class="small mt-lg reveal">Управление презентацией: <span class="kbd">→</span> / <span class="kbd">←</span> — между разделами · точки справа — быстрый переход · все графики и живой чат работают офлайн в этом одном HTML-файле.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>Презентация проекта «Эко-культура» (MasangerECO) для турнира разработчиков. Подготовлена 21 октября 2026 г. по данным репозитория Kaytarby/MasangerECO, коммит f3b7500d5b142296c02418a60c8531a75ec11387. Цифры проекта проверяемы по коду; общие факты помечены «МИР» и приведены для контекста. Стиль вдохновлён продуктовыми страницами Apple; Apple, WhatsApp, Telegram — товарные знаки их владельцев, сравнение приведено в информационных целях.</p>
+    <div class="foot-grid">
+      <div><b>Продукт</b><a href="#product">Тур по экранам</a><a href="#features">Возможности</a><a href="#ux">UX-детали</a><a href="#roadmap">Roadmap</a></div>
+      <div><b>Технологии</b><a href="#arch">Архитектура</a><a href="#stack">Стек и версии</a><a href="#db">База данных</a><a href="#realtime">Realtime</a></div>
+      <div><b>Доказательства</b><a href="#numbers">Цифры проекта</a><a href="#api">API-атлас</a><a href="#tests">25 E2E-тестов</a><a href="#code">Анатомия кода</a></div>
+      <div><b>Турнир</b><a href="#tournament">Сетка технологий</a><a href="#facts">24 факта</a><a href="#faq">FAQ для жюри</a><a href="#run">Запуск за 2 команды</a></div>
+    </div>
+    <hr class="sep">
+    <p style="margin-top:22px">🌿 Эко-культура — мессенджер для садоводов · MasangerECO · Один HTML-файл, ноль внешних зависимостей: откройте в любом браузере.</p>
+  </div>
+</footer>
+
+<script>
+/* ---------- Marquee ---------- */
+(function(){var items=['React <b>19</b>','Vite <b>6</b>','Tailwind <b>4</b>','Socket.IO <b>realtime</b>','SQLite <b>WAL</b>','JWT + <b>bcrypt</b>','<b>25/25</b> E2E-тестов','Фото до <b>10 МБ</b>','<b>11</b> API-эндпоинтов','Порт <b>3000</b>','Docker <b>1 команда</b>','PWA <b>standalone</b>'];var h=items.map(function(i){return '<span>🌿 '+i+'</span>'}).join('');document.getElementById('mq').innerHTML=h+h;})();
+
+/* ---------- Scroll progress + reveal + dots ---------- */
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');}})},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(function(el){io.observe(el)});
+window.addEventListener('scroll',function(){var h=document.documentElement;var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;document.getElementById('progress').style.width=p+'%';
+  var secs=['top','numbers','product','features','arch','api','tests','tournament','facts','final'],cur='top';
+  secs.forEach(function(id){var el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<innerHeight*.5)cur=id;});
+  document.querySelectorAll('.dots a').forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+cur)});},{passive:true});
+
+/* ---------- Animated counters ---------- */
+var cio=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;var el=e.target,end=+el.dataset.count,t0=performance.now();(function step(t){var k=Math.min(1,(t-t0)/1400);el.textContent=Math.round(end*(1-Math.pow(1-k,3))).toLocaleString('ru-RU');if(k<1)requestAnimationFrame(step);})(t0);cio.unobserve(el);})},{threshold:.4});
+document.querySelectorAll('[data-count]').forEach(function(el){cio.observe(el)});
+
+/* ---------- Live chat demo ---------- */
+(function(){var box=document.getElementById('liveChat');if(!box)return;var script=[
+ {who:'Борис Флорист',text:'Вот фото 📷 рассада уже с двумя листами!',me:false},
+ {who:'Анна Садовод',text:'Красота! Чем подкармливаешь?',me:false},
+ {text:'Только органика 🌿 Рецепт скину в группу',me:true},
+ {who:'Борис Флорист',text:'А у меня розы проснулись 🌹',me:false},
+ {text:'Создаю группу «Розы-2026» — все туда! 👥',me:true}];
+ var i=0;function next(){if(!document.body.contains(box))return;
+   var ty=document.createElement('div');ty.className='msg typing';ty.innerHTML='<i></i><i></i><i></i>';if(script[i].me)ty.classList.add('me');box.appendChild(ty);
+   setTimeout(function(){ty.remove();var m=document.createElement('div');m.className='msg'+(script[i].me?' me':'');m.innerHTML=(script[i].who&&!script[i].me?'<span class="who">'+script[i].who+'</span><br>':'')+script[i].text+'<span class="t">'+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})+'</span>';box.appendChild(m);while(box.children.length>5)box.removeChild(box.firstChild);i=(i+1)%script.length;setTimeout(next,2100);},1200);}
+ setTimeout(next,1600);})();
+
+/* ---------- Product tour tabs ---------- */
+var TOUR={
+home:{t:'💬 Главная — Home.tsx (415 строк)',b:'<p>Два мира на одном экране: слева — список чатов с поиском, справа — переписка на фоне <code>#efeae2</code>. Шапка 64 px, аватар ведёт в профиль, кнопки «Новая группа» и «Выйти» всегда под рукой.</p><ul class="checklist mt"><li>Список чатов: превью последнего сообщения («📷 Фотография», если фото без подписи), время, зелёный бейдж непрочитанных</li><li>Поиск одновременно по чатам и людям; клик по человеку мгновенно открывает диалог</li><li>Создание группы: название + чекбоксы участников, кнопка показывает «Создать группу (N уч.)» и блокируется без названия</li><li>Сообщения: свои справа (#d9fdd3), в группе — имя отправителя оранжевым, фото до 300 px высотой</li><li>Мобильная версия: один экран за раз, кнопка «←» возвращает к списку</li></ul>'},
+login:{t:'🔐 Вход — Login.tsx (62 строки)',b:'<p>Минимализм: карточка по центру, логотип-лист Lucide (48 px, <code>#00a884</code>), телефон + пароль, одна кнопка «Войти». Ошибка сервера («Неверный пароль», «Ошибка сети») — красная плашка над формой, без перезагрузки.</p><ul class="checklist mt"><li>Успех → <code>login(token, user)</code> в AuthContext + переход на главную</li><li>Ссылка «Зарегистрироваться» для новых садоводов</li><li>Фокус полей подсвечивается фирменным #008069</li></ul>'},
+register:{t:'🌱 Регистрация — Register.tsx (68 строк)',b:'<p>Три поля — имя и фамилия, телефон, пароль — и кнопка «Создать аккаунт». Сервер нормализует телефон, хэширует пароль bcrypt-ом и сразу выдаёт JWT: отдельная страница «а теперь войдите» не нужна.</p><ul class="checklist mt"><li>Дубликат номера (даже в формате «+7 900 …») → «Этот номер уже зарегистрирован»</li><li>Телефон короче 5 цифр → «Некорректный номер телефона»</li><li>После регистрации пользователь сразу внутри мессенджера</li></ul>'},
+profile:{t:'👤 Профиль — ProfileSettings.tsx (103 строки)',b:'<p>Имя, «о себе» и аватар с мгновенным превью через <code>URL.createObjectURL</code> — ещё до отправки на сервер видно, как будет выглядеть фото. Сохранение — <code>PUT /api/users/profile</code> multipart-формой.</p><ul class="checklist mt"><li>Иконка камеры поверх аватара намекает: «нажми меня»</li><li>Пустое имя сервер отклонит: 400 «Имя не может быть пустым»</li><li>После сохранения AuthContext обновляет пользователя во всём приложении без перезагрузки</li></ul>'}};
+function renderTour(k){document.getElementById('tourBody').innerHTML='<div class="card" style="text-align:left"><h3>'+TOUR[k].t+'</h3><div style="color:var(--muted);margin-top:12px;font-size:16.5px">'+TOUR[k].b+'</div></div>';}
+document.querySelectorAll('#tourTabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#tourTabs button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');renderTour(b.dataset.tour);}});renderTour('home');
+
+/* ---------- Stack tabs ---------- */
+var STACK={
+front:'<div class="grid3"><div class="card"><h4>⚛️ React 19.0.1 + React DOM</h4><p>Функциональные компоненты и хуки. Состояние — только Context (Auth, Socket) без внешних сторов: приложению хватает двух провайдеров в App.tsx.</p></div><div class="card"><h4>🧭 React Router 7.17</h4><p>BrowserRouter, 4 маршрута, ProtectedRoute-страж. Навигация без перезагрузок, SPA-fallback на сервере отдаёт index.html для глубоких ссылок.</p></div><div class="card"><h4>🎨 Tailwind CSS 4.1.14 + Lucide</h4><p>Плагин @tailwindcss/vite, весь CSS — одна строка импорта. Иконки lucide-react 0.546: Leaf, Search, Send, Users, Camera… Палитра WhatsApp задана прямо в классах.</p></div></div>',
+back:'<div class="grid3"><div class="card"><h4>🟢 Express 4.21.2</h4><p>REST API, express.json(), статика /uploads и dist, глобальный обработчик ошибок multer после всех маршрутов. HTTP-сервер общий с Socket.IO.</p></div><div class="card"><h4>📡 Socket.IO 4.8.3</h4><p>Сервер + клиент одной версии. JWT-гейт в io.use(), комнаты chat_*/user_*, событие new_message. CORS origin:* для превью-окружений.</p></div><div class="card"><h4>📸 Multer 2.1.1</h4><p>diskStorage в uploads/, имена Date.now()+random, лимит 10 МБ, фильтр image/*. Используется и для фото в чатах, и для аватаров.</p></div></div>',
+data:'<div class="grid3"><div class="card"><h4>🪶 better-sqlite3 12.10</h4><p>Синхронный драйвер: запрос = одна строка кода без await и пулов. WAL-режим, подготовленные выражения, авто-схема и авто-миграция last_read_at.</p></div><div class="card"><h4>🔑 jsonwebtoken 9.0.3</h4><p>HS-подпись {id, phone, name} секретом JWT_SECRET. Один механизм авторизует и REST (Bearer), и сокеты (handshake.auth).</p></div><div class="card"><h4>🧂 bcryptjs 3.0.3</h4><p>10 раундов хэширования с солью. Чистый JS без нативной сборки — Docker-образ собирается предсказуемо на любой платформе.</p></div></div>',
+dev:'<div class="grid3"><div class="card"><h4>⚡ Vite 6.2.3 + esbuild</h4><p>Vite собирает фронтенд в dist/, esbuild бандлит server.ts → dist/server.cjs (CJS, sourcemap, пакеты external). В dev Vite живёт middleware внутри Express.</p></div><div class="card"><h4>🐳 Docker multi-stage</h4><p>node:22-bookworm собирает, node:22-bookworm-slim запускает. Volume /data хранит базу и uploads между перезапусками. EXPOSE 3000.</p></div><div class="card"><h4>📜 TypeScript 5.8 + tsx</h4><p>tsx запускает server.ts в dev без компиляции; tsc --noEmit (npm run lint) проверяет типы. dotenv 17 — переменные окружения из .env при необходимости.</p></div></div>'};
+function renderStack(k){document.getElementById('stackBody').innerHTML=STACK[k];}
+document.querySelectorAll('#stackTabs button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#stackTabs button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');renderStack(b.dataset.stack);}});renderStack('front');
+
+/* ---------- API filter ---------- */
+document.querySelectorAll('#apiFilter button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#apiFilter button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');var f=b.dataset.f;document.querySelectorAll('#apiTable tbody tr').forEach(function(r){r.style.display=(f==='all'||r.dataset.g===f)?'':'none';});};});
+
+/* ---------- Tests table (25 checks verbatim) ---------- */
+var TESTS=[['register A','Регистрация возвращает токен и имя «Анна Садовод»'],['register B','Второй пользователь «Борис Флорист» создан'],['duplicate phone rejected','Дубликат телефона в формате «+7 900…» → 400 (нормализация работает)'],['login A','Вход по телефону+паролю выдаёт JWT'],['wrong password rejected','Неверный пароль → 400'],['users list for A contains B','GET /api/users не показывает себя, показывает других'],['create direct chat','Direct-чат создаётся и возвращает chatId'],['direct chat is reused','Повторное создание того же диалога не плодит дублей'],['sockets connected','Оба Socket.IO подключаются с JWT'],['send text message','Текст «…томаты?» сохранён, sender_name подставлен JOIN-ом'],['B receives message in realtime','Собеседник получает new_message с тем же id (≤5 с)'],['B sees unread=1 before replying','Счётчик непрочитанных вырос до ответа'],['send image message','PNG 1×1 принят, image_url возвращён'],['image is served','Загруженное фото отдаётся по HTTP 200'],['non-image upload rejected','Текстовый файл вместо фото → 400'],['history has 2 messages','История чата полна и в правильном порядке'],['B unread=0 after replying','Ответ в чате сам помечает его прочитанным'],['last message is image with caption','Превью чата: фото + подпись «Вот фото»'],['A sees unread=1','У отправителя теперь 1 непрочитанное (ответ Бориса)'],['mark chat read','POST /read отвечает {ok:true}'],['A unread now 0','После /read счётчик обнулён'],['create group chat','Группа «Клуб садоводов» создана'],['group message sent','Сообщение в группе несёт имя отправителя'],['profile updated with avatar','Имя, bio «Люблю розы» и аватар сохранены'],['stranger blocked from chat','Виктория (не участник) получает 403 на чужой чат']];
+document.getElementById('testRows').innerHTML=TESTS.map(function(t,i){return '<tr><td>'+(i+1)+'</td><td><code>'+t[0]+'</code></td><td>'+t[1]+'</td><td><span class="pass">✓ PASS</span></td></tr>'}).join('');
+
+/* ---------- Tournament why-box ---------- */
+document.querySelectorAll('.match').forEach(function(m){m.style.cursor='pointer';m.onclick=function(){var b=document.getElementById('whyBox');b.innerHTML='⚖️ <b>Вердикт судей:</b> '+m.dataset.why;b.scrollIntoView({behavior:'smooth',block:'center'});};});
+
+/* ---------- Facts (24) ---------- */
+var FACTS=[
+['code','Один файл — весь бэкенд','server.ts (443 строки) содержит сервер, API, сокеты, схему БД, миграции и раздачу фронтенда. Его можно прочитать целиком за ~10 минут — идеальный объект для защиты проекта.'],
+['code','CSS на 23 байта','Весь src/index.css — строка @import "tailwindcss";. Все остальные стили — utility-классы Tailwind 4 прямо в JSX.'],
+['code','Миграция, которая сама себя пишет','При старте сервер проверяет PRAGMA table_info(chat_participants) и при необходимости добавляет last_read_at ALTER TABLE-ом. Старые базы обновляются без ручных действий.'],
+['code','Телефон без форматирования','normalizePhone оставляет только цифры: «+7 (900) 123-45-67», «8 900…» и «7900…» — после нормализации сравниваются честно, поэтому дубликат аккаунта создать нельзя.'],
+['code','Direct-чат нельзя создать дважды','SQL с двумя JOIN по chat_participants находит существующий диалог пары пользователей. Тест «direct chat is reused» доказывает: второй запрос вернёт тот же chatId.'],
+['code','Отправитель «прочитал» автоматически','При отправке сообщения сервер обновляет last_read_at отправителя. Логично: невозможно не прочитать чат, в который только что написал.'],
+['code','Сокет входит во все чаты сразу','При подключении один SQL-запрос достаёт все chat_id пользователя, и сокет джойнится в каждую комнату chat_* плюс личную user_*. Поэтому сообщения приходят даже в закрытые чаты — и превращаются в уведомления.'],
+['code','Случайность в именах файлов','Загрузки сохраняются как Date.now() + «-» + Math.random()*1e9 + расширение. Два фото с именем «rose.jpg» никогда не перезапишут друг друга.'],
+['code','Пароль вырезается из ответа','При логине сервер делает const {password:_pw, ...userInfo} = user — хэш физически не может уехать клиенту даже случайно.'],
+['code','Пакеты «на вырост»','motion и @google/genai стоят в package.json, но пока не импортируются: задел на анимации и ИИ-диагностику растений (Gemini заявлен и в metadata.json).'],
+['code','Тестовая фотография — 1 пиксель','E2E-тест отправляет PNG 1×1 из base64-строки, скачивает его обратно (200) и проверяет, что .txt-файл отклоняется (400). Минимум данных — максимум покрытия.'],
+['code','Порт 3000 и адрес 0.0.0.0','Сервер слушает все интерфейсы: один процесс обслуживает localhost, локальную сеть и облачные превью-прокси без перенастройки.'],
+['world','SQLite — самая распространённая БД в мире','SQLite встроена в каждый смартфон, браузер и большинство ОС: счёт работающих копий идёт на триллион баз. «Эко-культура» использует ту же технологию, что хранит данные в вашем телефоне.'],
+['world','Первый мессенджер — ICQ (1996)','Израильская Mirabilis запустила ICQ («I seek you») в ноябре 1996 года. Знаменитое «у-у!» при входящем сообщении — предок всех наших уведомлений, включая Notification API в этом проекте.'],
+['world','WhatsApp купили за $19 млрд','В 2014 году Facebook приобрела WhatsApp примерно за 19 миллиардов долларов — мессенджер тогда строила команда всего из ~55 человек. Вывод для турнира: ценность — не в размере команды, а в продукте.'],
+['world','bcrypt родился в 1999 году','Алгоритм хэширования паролей bcrypt представили на USENIX в 1999-м. Его «цена» (у нас 10 раундов = 2¹⁰ итераций) специально делает перебор паролей дорогим — четверть века спустя он всё ещё стандарт.'],
+['world','JWT — это просто три строки через точки','JSON Web Token (RFC 7519, 2015) — header.payload.signature в Base64URL. Подпись секретом JWT_SECRET позволяет серверу доверять токену без хранения сессий.'],
+['world','WebSocket моложе, чем кажется','Протокол WebSocket стандартизировали как RFC 6455 лишь в 2011 году. До этого «живые» чаты делали через длинные опросы сервера — Socket.IO до сих пор умеет этот фолбэк.'],
+['world','React начинался как FaxJS','Внутри Facebook прототип React носил имя FaxJS (2011). Сегодня React 19 — самая популярная библиотека интерфейсов, и именно она рисует чаты «Эко-культуры».'],
+['world','Садоводство снижает стресс — доказано','Исследования (например, Journal of Health Psychology, 2011) показывают: 30 минут работы в саду снижают уровень кортизола сильнее, чем чтение в помещении. Мессенджер для садоводов — буквально про здоровье.'],
+['world','Томат — ягода, а банан — трава','Ботанически томат — ягода, огурец — тоже, а банан — плод гигантской травы. Верховный суд США в 1893 году (Nix v. Hedden) ради налогов объявил томат овощем. Отличная тема для группы «Томаты-2026».'],
+['world','Одно дерево — кислород для двоих','Взрослое дерево за год производит порядка 100+ кг кислорода — ориентировочно столько, сколько нужно двум людям. Сообщества садоводов в буквальном смысле делают воздух чище.'],
+['world','PWA придумали в Google в 2015-м','Термин Progressive Web Apps предложили Фрэнсис Берриман и Алекс Рассел в 2015 году. Манифест + service worker «Эко-культуры» — прямое наследие этой идеи: сайт, который ставится как приложение.'],
+['world','Первый смайл в чате — 1982 год','Скотт Фалман из Carnegie Mellon 19 сентября 1982 года предложил :-) для шуток в переписке. Спустя 44 года наши сообщения с 🍅 и 🌿 продолжают ту же традицию.']];
+function renderFacts(f){document.getElementById('factGrid').innerHTML=FACTS.filter(function(x){return f==='all'||x[0]===f}).map(function(x,i){return '<div class="fact"><span class="num">ФАКТ</span> <span class="src-tag'+(x[0]==='world'?' gen':'')+'">'+(x[0]==='code'?'ИЗ КОДА':'МИР')+'</span><h4>'+x[1]+'</h4><p>'+x[2]+'</p></div>'}).join('');}
+document.querySelectorAll('#factFilter button').forEach(function(b){b.onclick=function(){document.querySelectorAll('#factFilter button').forEach(function(x){x.classList.remove('on')});b.classList.add('on');renderFacts(b.dataset.ff);}});renderFacts('all');
+
+/* ---------- Copy buttons ---------- */
+document.querySelectorAll('[data-copy]').forEach(function(b){b.onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy);var o=b.textContent;b.textContent='✓ Скопировано';setTimeout(function(){b.textContent=o},1600);};});
+
+/* ---------- Charts ---------- */
+function dpr(c){var r=window.devicePixelRatio||1,w=c.width,h=c.height;c.width=w*r;c.height=h*r;c.style.aspectRatio=w+'/'+h;var x=c.getContext('2d');x.scale(r,r);return[x,w,h];}
+(function(){var c=document.getElementById('donut');if(!c)return;var z=dpr(c),x=z[0];var data=[[443,'#00a884'],[648,'#30d158'],[154,'#64d2ff'],[51,'#ffd60a']];var tot=1296,a=-Math.PI/2,cx=170,cy=150,R=110,r=64;
+data.forEach(function(d){var s=d[0]/tot*Math.PI*2;x.beginPath();x.arc(cx,cy,R,a,a+s);x.arc(cx,cy,r,a+s,a,true);x.closePath();x.fillStyle=d[1];x.fill();a+=s;});
+x.fillStyle='#f5f5f7';x.font='800 30px -apple-system,sans-serif';x.textAlign='center';x.fillText('1296',cx,cy+2);x.font='600 12px -apple-system,sans-serif';x.fillStyle='#a1a1a6';x.fillText('строк кода',cx,cy+24);
+x.textAlign='left';var labels=['server.ts — 443','Страницы — 648','Контексты+App — 154','HTML/CSS/конфиг — 51'];data.forEach(function(d,i){x.fillStyle=d[1];x.fillRect(330,70+i*44,12,12);x.fillStyle='#e8e8ed';x.font='600 13px -apple-system,sans-serif';x.fillText(labels[i]+'  ('+Math.round(d[0]/tot*100)+'%)',350,81+i*44);});})();
+(function(){var c=document.getElementById('bars');if(!c)return;var z=dpr(c),x=z[0],W=z[1],H=z[2];var rows=[['server.ts',443,'#00a884'],['Home.tsx',415,'#30d158'],['e2e-test.mjs',163,'#64d2ff'],['ProfileSettings',103,'#64d2ff'],['Register.tsx',68,'#bf5af2'],['AuthContext',65,'#bf5af2'],['Login.tsx',62,'#ff9f0a'],['App.tsx',44,'#ff9f0a'],['SocketContext',35,'#ffd60a'],['index.html',28,'#ffd60a'],['vite.config',22,'#8e8e93'],['main.tsx',10,'#8e8e93']];
+rows.forEach(function(r,i){var y=14+i*30;x.fillStyle='#a1a1a6';x.font='600 11.5px ui-monospace,monospace';x.textAlign='right';x.fillText(r[0],128,y+12);var bw=(W-210)*(r[1]/443);x.fillStyle=r[2];x.beginPath();x.roundRect(138,y,Math.max(bw,6),16,5);x.fill();x.fillStyle='#f5f5f7';x.textAlign='left';x.fillText(r[1],146+Math.max(bw,6),y+12);});})();
+
+/* ---------- Keyboard section navigation ---------- */
+var NAVSECS=['top','numbers','why','product','features','realtime','arch','stack','db','api','security','code','tests','tournament','facts','ux','run','roadmap','faq','final'];
+document.addEventListener('keydown',function(e){if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+var cur=0;NAVSECS.forEach(function(id,i){var el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<innerHeight*.5)cur=i;});
+var n=e.key==='ArrowRight'?Math.min(cur+1,NAVSECS.length-1):Math.max(cur-1,0);document.getElementById(NAVSECS[n]).scrollIntoView({behavior:'smooth'});});
+</script>
+</body>
+</html>
