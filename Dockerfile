@@ -1,5 +1,5 @@
-# Эко-культура — мессенджер
-# Собрать:  docker build -t ecoculture-messenger .
+# Эко-культура — мессенджер (Docker-вариант с локальным SQLite)
+# Собрать:   docker build -t ecoculture-messenger .
 # Запустить: docker run -p 3000:3000 -v messenger-data:/data ecoculture-messenger
 
 FROM node:22-bookworm AS build
@@ -17,7 +17,8 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/build-server ./build-server
 RUN mkdir -p /data/uploads
 VOLUME /data
 EXPOSE 3000
-CMD ["node", "dist/server.cjs"]
+CMD ["node", "build-server/server.cjs"]

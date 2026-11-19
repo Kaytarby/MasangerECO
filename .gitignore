@@ -1,7 +1,9 @@
 node_modules/
 build/
+build-server/
 dist/
 coverage/
+.vercel/
 .DS_Store
 *.log
 .env*

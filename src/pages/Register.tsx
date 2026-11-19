@@ -32,7 +32,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 font-sans text-[#414141]">
+    <div className="min-h-full bg-[#f0f2f5] flex items-center justify-center p-4 font-sans text-[#414141]">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 border border-[#d1d7db]">
         <div className="flex justify-center mb-6 text-[#00a884]">
           <Leaf size={48} />
